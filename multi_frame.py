@@ -19,7 +19,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--e", type=str, default=None, help="")
 args = parser.parse_args()   
-cap = cv2.VideoCapture(r"test_for_hand.mp4")
+cap = cv2.VideoCapture(r"test_for_hand.mp4")# mp4 path
 frames_num = cap.get(7)
 mpHands = mp.solutions.hands
 hands = mpHands.Hands(min_detection_confidence=0.5)
