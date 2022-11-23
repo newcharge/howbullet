@@ -28,18 +28,11 @@ class HumanHandDataset(Dataset):
             self.color_path.append(os.path.join(dataset_dir, mode, "rgb", f"{title}.jpg"))
 
         if self.is_training:
-            mano_param_path = os.path.join(dataset_dir, f"{mode}_mano.json")
             xyz_path = os.path.join(dataset_dir, f"{mode}_xyz.json")
-
-            self.mano = torch.tensor(load_json(mano_param_path))
             self.xyz = torch.tensor(load_json(xyz_path))
 
             self.xyz_from_canonical, _ = transform_to_canonical(self.xyz, is_human=True)
             self.key_vector = get_key_vectors(self.xyz_from_canonical, is_human=True)
-
-            # point cloud, large data !
-            # vert_path = os.path.join(dataset_dir, f"{mode}_verts.json")
-            # self.vert = np.array(load_json(vert_path), dtype=float)
 
     def __getitem__(self, index):
         color_path = self.color_path[index]
@@ -49,11 +42,10 @@ class HumanHandDataset(Dataset):
                 "rgb": rgb,  # (224, 224, 3) uint8
                 "K": self.K[index],  # (3, 3) float
                 "scale": self.scale[index],  # float
-                "mano": self.mano[index],  # (1, 61) float
+                "xyz_input": self.xyz[index].flatten(),
                 "xyz": self.xyz[index],  # (21, 3) float
                 "key_vectors": self.key_vector[index],  # (10, 3) float
                 "canonical_xyz": self.xyz_from_canonical[index],
-                "mano_input": self.mano[index].view(-1)[:55],
                 # "vert" = self.vert[index],  # point cloud, large data !
 
             }

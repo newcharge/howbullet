@@ -28,7 +28,7 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     validation_loader = DataLoader(validation_dataset, batch_size=64, shuffle=False)
 
-    epoch_num = 2
+    epoch_num = 10
     net = RetargetingMLP().to(device=device)
     optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
 
@@ -39,10 +39,10 @@ if __name__ == "__main__":
         total_energy = 0
         passed_num = 0
         for _, roi in loop:
-            net_input = roi["mano_input"].to(device=device)
+            net_input = roi["xyz_input"].to(device=device)
             human_key_vectors = roi["key_vectors"].to(device=device)
-            output = net(net_input)
-            loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains)
+            joint_angles, _ = net(net_input)
+            loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=joint_angles, chains=chains)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -58,10 +58,10 @@ if __name__ == "__main__":
             total_energy = 0
             passed_num = 0
             for _, roi in loop:
-                net_input = roi["mano_input"].to(device=device)
+                net_input = roi["xyz_input"].to(device=device)
                 human_key_vectors = roi["key_vectors"].to(device=device)
-                output = net(net_input)
-                loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains)
+                joint_angles, _ = net(net_input)
+                loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=joint_angles, chains=chains)
                 total_energy += loss.item() * net_input.shape[0]
                 passed_num += net_input.shape[0]
                 loop.set_description(f"Epoch [{i + 1}/{epoch_num}]")

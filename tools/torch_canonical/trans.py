@@ -6,7 +6,7 @@ def cal_cononical_transform(kp3d, is_human):
     assert len(kp3d.shape) == 3, "kp3d need to be BS x 21 x 3"
     dev = kp3d.device
     bs = kp3d.shape[0]
-    kp3d = kp3d.clone().detach()  # ?
+    kp3d = kp3d.clone().detach()
 
     # Align root
     tx = kp3d[:, 0, 0]
