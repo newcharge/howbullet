@@ -23,9 +23,13 @@ parser.add_argument("--output_path", type=str, default="output_for_hand.mp4", he
 parser.add_argument("--model_path", type=str, default=None, help="")
 # type==0 with collision  type==1 without collision
 args = parser.parse_args() 
+
 if args.model_path==None:
     print("model path doesn't exist")
     assert(0)
+    
+# use pipemedia to collect the 21 Coordinates of the hand
+
 cap = cv2.VideoCapture(args.input_path)
 frames_num = cap.get(7)
 mpHands = mp.solutions.hands
@@ -39,6 +43,7 @@ Results=[]
 f=0
 while True:
     ret, img = cap.read()
+    # frame by frame 
     if ret:
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         result = hands.process(imgRGB)
@@ -56,25 +61,21 @@ while True:
                     yPos = int(lm.y * imgHeight)
                     zPos = int(lm.z )
                     
-                    res.append((lm.x, lm.y,lm.z))
-                    cv2.putText(img, str(i), (xPos - 25, yPos + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 2)
-                    
-            if f%1==0:       
+                    res.append((lm.x, lm.y,lm.z) 
+                #  only one hand in video
                 Results.append(res)                            
-            f+=1           
+                       
     else:
         break   
-model_path=args.model_path
-#path="epoch_100_e_"+args.e+"_coodi_model.pth"
-#path="epoch_100_e_"+args.e+"_21coodi_model.pth"
-#path="epoch_100_e__21coodi_Nocollision_model.pth"
-#net = torch.load("model\\100coodi_new_model.pth",map_location=torch.device('cpu'))
+model_path=args.model_path                                                              
 net = torch.load(model_path,map_location=torch.device('cpu'))
 Sim_Joint_positions=[]
-    # load human hand pose
+                               
+# The coordinates of the hand are converted to the joint angles of the manipulator
+                               
 for i in Results:
     Coordin=torch.tensor(i)
-    #use 21 cood
+    #use 21 coordinates
     robot_joint_position = net(Coordin.view(1,-1))
     chains = fk.get_chains(
                 urdf_path="robots/allegro_hand_description/allegro_hand_description_right.urdf", use_gpu=False
@@ -86,6 +87,9 @@ for i in Results:
             sim_joint_position[mapping_to_sim[i]] = joint_position[i]
     Sim_Joint_positions.append(sim_joint_position)
     joint_from_root_position = None
+                               
+# Simulation environment setting
+                               
 physics_client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
 p.setGravity(0, 0, -9.8)
 log_id = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, args.output_path)
@@ -111,6 +115,7 @@ time_step = 0.00003
 number=0
 count=0
 num_move=250
+#  Manipulator in simulation environment                                                             
 while True:
             if not p.isConnected():
                 
