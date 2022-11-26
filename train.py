@@ -62,10 +62,10 @@ if __name__ == "__main__":
             human_key_vectors = roi["key_vectors"].to(device=device)            
             output = net(net_input)
             if args.type==0:
-                
+                # without collision
                 loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains) 
             elif args.type==1:
-                
+                # with collision
                 loss=anergy_loss_collision(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains,e=float(args.e))
             else:
                 print("error type!")
