@@ -11,7 +11,7 @@ class RetargetingMLP(nn.Module):
             # change 55---> 45
 
             #nn.Linear(45, 256), nn.Tanh(),
-            nn.Linear(48,256),nn.Tanh(),
+            nn.Linear(63,256),nn.Tanh(),
             nn.Linear(256, 256), nn.Tanh(),
             nn.Linear(256, 128), nn.Tanh(),
             nn.Linear(128, 16), nn.Tanh()
