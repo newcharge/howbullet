@@ -9,14 +9,23 @@ import tools.fk_helper as fk
 import tools.plot_helper as plot
 import tqdm
 import argparse
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--e", type=str, default=None, help="")
+    parser.add_argument("--e", type=str, default="0.00001", help="")
+    parser.add_argument("--type", type=int, default=1, help="")
+    # type==1 with collision type==0 without collison
+    parser.add_argument("--epoch", type=int, default=100, help="")
     args = parser.parse_args()
-    print("###################")
     print("e:  ",args.e)
-    print("###################")
+    print("type: ",args.type)
+    if args.type==0:
+                print("no collision")                
+    elif args.type==1:
+                print("with collision")       
+    else:
+                print("error type!")
+                assert(0)
+    print("epoch: ",args.epoch)
     if torch.cuda.is_available():
         print("using GPU ...")
         device = torch.device("cuda:0")
@@ -27,7 +36,6 @@ if __name__ == "__main__":
         print("using CPU ...")
         device = torch.device("cpu")
         chains = fk.get_chains("robots/allegro_hand_description/allegro_hand_description_right.urdf", use_gpu=False)
-
     train_val_dataset, test_dataset = split_dataset(HumanHandDataset("FreiHAND_pub_v2"), keep=0.9)
     train_dataset, validation_dataset = split_dataset(train_val_dataset, keep=0.9)
     torch.save(test_dataset, "test_dataset.pth")
@@ -35,10 +43,9 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     validation_loader = DataLoader(validation_dataset, batch_size=64, shuffle=False)
 
-    epoch_num = 100
+    epoch_num = args.epoch
     net = RetargetingMLP().to(device=device)
     optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
-
     train_energy_per_iter, train_energy_per_epoch, val_energy_per_epoch = list(), list(), list()
     for i in range(epoch_num):
         net.train()
@@ -46,26 +53,28 @@ if __name__ == "__main__":
         total_energy = 0
         passed_num = 0
         for _, roi in loop:
-            '''
-            lis=[]
-            for i in roi["mano_input"]:
-                lis.append(list(i[0:45]))
-            net_input=torch.tensor(lis).to(device=device)'''
+            
             lis=[]
             for i in roi["xyz"]:
-                lis.append(list(i[[0,1,2,3,5,6,7,9,10,11,13,14,15,17,18,19]][:].view(1,-1).squeeze(0)))
+                # use all xyz
+                lis.append(list(i.view(1,-1).squeeze(0)))
             net_input=torch.tensor(lis).to(device=device)
-            #net_input = roi["mano_input"].to(device=device)
             human_key_vectors = roi["key_vectors"].to(device=device)            
             output = net(net_input)
-            #loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains)
-            loss=anergy_loss_collision(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains,e=float(args.e))
+            if args.type==0:
+                # without collision
+                loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains) 
+            elif args.type==1:
+                # with collision
+                loss=anergy_loss_collision(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains,e=float(args.e))
+            else:
+                print("error type!")
+                assert(0)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             total_energy += loss.item() * net_input.shape[0]
             passed_num += net_input.shape[0]
-            #loop.set_description(f"Epoch [{i + 1}/{epoch_num}]")
             loop.set_postfix(loss=total_energy / passed_num)
             train_energy_per_iter.append(loss.item())
         train_energy_per_epoch.append(total_energy / passed_num)
@@ -75,31 +84,37 @@ if __name__ == "__main__":
             total_energy = 0
             passed_num = 0
             for _, roi in loop:
-                '''
-                lis=[]
-                for i in roi["mano_input"]:
-                    lis.append(list(i[0:45]))
-                net_input=torch.tensor(lis).to(device=device)'''
                 lis=[]
                 for i in roi["xyz"]:
-                    lis.append(list(i[[0,1,2,3,5,6,7,9,10,11,13,14,15,17,18,19]][:].view(1,-1).squeeze(0)))
+                    lis.append(list(i.view(1,-1).squeeze(0)))    
                 net_input=torch.tensor(lis).to(device=device)
-                #net_input = roi["mano_input"].to(device=device)
                 human_key_vectors = roi["key_vectors"].to(device=device)
                 
                 output = net(net_input)
-                #loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains)
-                loss=anergy_loss_collision(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains,e=float(args.e))
+                
+                if args.type==0:                
+                    loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains) 
+                elif args.type==1:                
+                    loss=anergy_loss_collision(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains,e=float(args.e))
+                else:
+                    print("error type!")
+                    assert(0)
                 total_energy += loss.item() * net_input.shape[0]
                 passed_num += net_input.shape[0]
-                #loop.set_description(f"Epoch [{i + 1}/{epoch_num}]")
+                
                 loop.set_postfix(loss=total_energy / passed_num)
             val_energy_per_epoch.append(total_energy / passed_num)
 
     # dump results
-    
-    torch.save(net, "epoch_"+str(epoch_num)+"_e_"+args.e+"_coodi_model.pth")
-    np.savetxt("log\\epoch_train_energy_"+args.e+"_per_iter.txt", np.array(train_energy_per_iter))
-    np.savetxt("log\\epoch_train_energy_"+args.e+"_per_epoch.txt", np.array(train_energy_per_epoch))
-    np.savetxt("log\\epoch_val_energy_"+args.e+"_per_epoch.txt", np.array(val_energy_per_epoch))
-    #plot.plot_energy("log")
+    if args.type==0:
+        torch.save(net, "model\\epoch_"+str(epoch_num)+"_21coodi_Nocollision_model.pth")
+        np.savetxt("log\\epoch_train_21cood_Nocollision_energy_"+"_per_iter.txt", np.array(train_energy_per_iter))
+        np.savetxt("log\\epoch_train_21cood_Nocollision_energy_"+"_per_epoch.txt", np.array(train_energy_per_epoch))
+        np.savetxt("log\\epoch_val_21cood_Nocollision_energy_"+"_per_epoch.txt", np.array(val_energy_per_epoch))
+    elif args.type==1:
+        torch.save(net, "model\\epoch_"+str(epoch_num)+"_e_"+args.e+"_21coodi_Withcollision_model.pth")
+        np.savetxt("log\\epoch_train_21cood_Withcollision_energy_"+args.e+"_per_iter.txt", np.array(train_energy_per_iter))
+        np.savetxt("log\\epoch_train_21cood_Withcollision_energy_"+args.e+"_per_epoch.txt", np.array(train_energy_per_epoch))
+        np.savetxt("log\\epoch_val_21cood_Withcollision_energy_"+args.e+"_per_epoch.txt", np.array(val_energy_per_epoch))
+    else:
+        print("type error")
