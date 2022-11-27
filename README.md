@@ -1,7 +1,7 @@
 # howbullet
 dexpilot 
 
-1.pip install pipemedia
+1.pip install mediapipe
 
 2.输入为手部21坐标而不是原来的mano参数
 
