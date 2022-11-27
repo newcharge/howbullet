@@ -89,6 +89,7 @@ if __name__ == "__main__":
                     lis.append(list(i.view(1,-1).squeeze(0)))    
                 net_input=torch.tensor(lis).to(device=device)
                 human_key_vectors = roi["key_vectors"].to(device=device)
+                
                 output = net(net_input)
                 
                 if args.type==0:                
