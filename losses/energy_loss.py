@@ -5,16 +5,16 @@ def cal_loss(
         human_key_vectors, robot_joints_position_from_canonical, robot_joint_angles,
         with_self_collision, collision_epsilon):
     if with_self_collision:
-        return energy_loss(
-            human_key_vectors=human_key_vectors,
-            robot_joints_position_from_canonical=robot_joints_position_from_canonical,
-        )
-    else:
         return energy_loss_collision(
             human_key_vectors=human_key_vectors,
             robot_joints_position_from_canonical=robot_joints_position_from_canonical,
             robot_joint_angles=robot_joint_angles,
             epsilon=collision_epsilon
+        )
+    else:
+        return energy_loss(
+            human_key_vectors=human_key_vectors,
+            robot_joints_position_from_canonical=robot_joints_position_from_canonical,
         )
 
 
