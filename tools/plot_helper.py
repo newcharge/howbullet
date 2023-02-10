@@ -1,13 +1,17 @@
+import os
 import open3d as o3d
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 
 
 class Color:
     RED = [1, 0, 0]
     GREEN = [0, 1, 0]
     BLUE = [0, 0, 1]
+    CYAN = [0, 1, 1]
+    YELLOW = [1, 1, 0]
+    Magenta = [1, 0, 1]
+    GRAY = [.5, .5, .5]
 
 
 class Skeleton:
@@ -30,10 +34,30 @@ class Skeleton:
     ])
 
 
-def get_plot_points(points, color):
+def plot_pts(objs, width=1280, height=720):
+    o3d.visualization.draw_geometries(
+        objs, width=width, height=height
+    )
+
+
+def plot_joints_to_rgb(rgb, intrinsics, joints3d):
+    x2d = intrinsics @ joints3d.T
+    x2d[:2, :] /= x2d[2, :]
+    plt.clf()
+    plt.imshow(rgb)
+    plt.plot(x2d[0], x2d[1], ".")
+    plt.show()
+
+
+def get_plot_points(points, color, uniform_color):
     point_cloud = o3d.geometry.PointCloud()
     point_cloud.points = o3d.utility.Vector3dVector(points)
-    point_cloud.paint_uniform_color(color)
+    if uniform_color:
+        point_cloud.paint_uniform_color(color)
+    else:
+        point_cloud.colors = o3d.utility.Vector3dVector(
+            np.linspace([0, 0, 0], color, num=len(points), endpoint=True)
+        )
     return point_cloud
 
 
@@ -45,8 +69,8 @@ def get_plot_lines(lines, points, color):
     return line_set
 
 
-def get_plot_graph(points, lines, color):
-    hand_point_cloud = get_plot_points(points, color)
+def get_plot_graph(points, lines, color, uniform_color=True):
+    hand_point_cloud = get_plot_points(points, color, uniform_color=uniform_color)
     hand_line_set = get_plot_lines(lines, points, color)
     return hand_point_cloud, hand_line_set
 

@@ -2,7 +2,7 @@ import torch
 import tools.torch_canonical.convert as cvt
 
 
-def cal_cononical_transform(kp3d, is_human):
+def cal_canonical_transform(kp3d, is_human):
     assert len(kp3d.shape) == 3, "kp3d need to be BS x 21 x 3"
     dev = kp3d.device
     bs = kp3d.shape[0]
@@ -45,7 +45,7 @@ def cal_cononical_transform(kp3d, is_human):
 def transform_to_canonical(kp3d, is_human=True):
     """Undo global translation and rotation
     """
-    normalization_mat = cal_cononical_transform(kp3d, is_human)
+    normalization_mat = cal_canonical_transform(kp3d, is_human)
     kp3d = cvt.xyz_to_xyz1(kp3d)
     # import pdb
     # pdb.set_trace()
@@ -53,4 +53,8 @@ def transform_to_canonical(kp3d, is_human=True):
     kp3d_canonical = kp3d_canonical.squeeze(-1)
     # Pad T from 3x4 mat to 4x4 mat
     normalization_mat = cvt.pad34_to_44(normalization_mat)
-    return kp3d_canonical, normalization_mat
+    return kp3d_canonical, normalization_mat  # TCW of human hand, or TCB of robot hand
+
+
+def get_normalization_mat(kp3d, is_human=True):
+    return cvt.pad34_to_44(cal_canonical_transform(kp3d, is_human))

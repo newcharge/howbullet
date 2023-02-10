@@ -6,16 +6,23 @@ import os
 
 
 class LinkState:
-    def __init__(self, state):
-        self.world_position = state[0]
-        self.world_rotation = state[1]
-        self.local_inertial_frame_position = state[2]
-        self.local_inertial_frame_rotation = state[3]
-        self.world_frame_position = state[4]
-        self.world_frame_rotation = state[5]
+    def __init__(self, states, dynamics):
+        self.world_position = states[0]
+        self.world_rotation = states[1]
+        self.local_inertial_frame_position = states[2]
+        self.local_inertial_frame_rotation = states[3]
+        self.world_frame_position = states[4]
+        self.world_frame_rotation = states[5]
         # lines below should only be used when computing velocity
         # self.world_linear_velocity = state[6]
         # self.world_angular_velocity = state[7]
+        self.mass = dynamics[0]
+        self.lateral_friction = dynamics[1]
+        # TODO: 主惯性矩参数 —— dynamics[2:5]
+        self.restitution_coefficient = dynamics[5]
+        self.rolling_friction = dynamics[6]
+        self.spinning_friction = dynamics[7]
+        # dynamics[8:] might be useless for this work
 
     def get_position_rotation(self):
         link_from_world_position, link_from_world_rotation = self.world_position, self.world_rotation
@@ -23,7 +30,7 @@ class LinkState:
 
     @classmethod
     def link_state(cls, robot_id, link_id):
-        return cls(p.getLinkState(robot_id, link_id))
+        return cls(p.getLinkState(robot_id, link_id), p.getDynamicsInfo(robot_id, link_id))
 
 
 class JointInfo:
@@ -62,23 +69,26 @@ class JointInfo:
         )
         return joint_from_world_position, joint_from_world_rotation
 
-    def get_root_related_position_rotation(self):
+    def get_root_related_position_rotation(self, base_index=7):
+        joints_tool = CommonJoints.get_joints(is_right=True)
+
         joint_from_world_position, joint_from_world_rotation = self.get_position_rotation()
-        base_from_world_position, base_from_world_rotation = p.getBasePositionAndOrientation(self.robot_id)
-        if self.is_right:
-            base_from_root_position, base_from_root_rotation = RightJoints.OR_POSITION, RightJoints.OR_ROTATION
-        else:
-            base_from_root_position, base_from_root_rotation = LeftJoints.OR_POSITION, LeftJoints.OR_ROTATION
+        base_from_world_position, base_from_world_rotation = JointInfo\
+            .joint_info(self.robot_id, base_index)\
+            .get_position_rotation()
+        base_from_root_position = joints_tool.BASE_FROM_ROOT_POSITION
+        base_from_root_rotation = joints_tool.BASE_FROM_ROOT_ROTATION
+
         world_from_base_position, world_from_base_rotation = p.invertTransform(
             base_from_world_position, base_from_world_rotation
         )
-        joint_from_base_position, joint_from_base_rotation = p.multiplyTransforms(
-            world_from_base_position, world_from_base_rotation,
-            joint_from_world_position, joint_from_world_rotation
+        world_from_root_position, world_from_root_rotation = p.multiplyTransforms(
+            base_from_root_position, base_from_root_rotation,
+            world_from_base_position, world_from_base_rotation
         )
         joint_from_root_position, joint_from_root_rotation = p.multiplyTransforms(
-            base_from_root_position, base_from_root_rotation,
-            joint_from_base_position, joint_from_base_rotation
+            world_from_root_position, world_from_root_rotation,
+            joint_from_world_position, joint_from_world_rotation
         )
         return joint_from_root_position, joint_from_root_rotation
 
@@ -103,12 +113,13 @@ class CommonJoints:
     THUMB, INDEX, MIDDLE, RING_LITTLE = None, None, None, None
     TIP, DIP, PIP_U, PIP_D, MCP = None, None, None, None, None
     LINK_INFOS = None
-    OR_POSITION = (0, 0, 0.095)
-    OR_ROTATION = (0, 0, 0, 1)
+    INDEX_OFFSET = 8
+    BASE_FROM_ROOT_POSITION = (0, 0, 0.095)
+    BASE_FROM_ROOT_ROTATION = (0, 0, 0, 1)
     T_OR = [
         [1., 0., 0., 0.],
         [0., 1., 0., 0.],
-        [0., 0., 1., 0.095],
+        [0., 0., 1., -0.095],
         [0., 0., 0., 1.]
     ]
     THUMB_TIP = "link_15.0_tip"
@@ -117,8 +128,22 @@ class CommonJoints:
     RING_LITTLE_TIP = "link_11.0_tip"
 
     @classmethod
+    def fix_indices(cls, indices):
+        if isinstance(indices, int):
+            return indices + cls.INDEX_OFFSET
+        else:
+            return [i + cls.INDEX_OFFSET for i in indices]
+
+    @classmethod
+    def reset_fix(cls, indices):
+        if isinstance(indices, int):
+            return indices - cls.INDEX_OFFSET
+        else:
+            return [i - cls.INDEX_OFFSET for i in indices]
+
+    @classmethod
     def get_sequence(cls):
-        return [i + 1 for i in [-1] + cls.THUMB + cls.INDEX + cls.MIDDLE + cls.RING_LITTLE]
+        return cls.fix_indices([-1] + cls.THUMB + cls.INDEX + cls.MIDDLE + cls.RING_LITTLE)
 
     @classmethod
     def get_mapping_to_sim(cls):
@@ -151,7 +176,7 @@ class LeftJoints(CommonJoints):
         "link_8.0", "link_9.0", "link_10.0", "link_11.0", "link_11.0_tip",
         "link_4.0", "link_5.0", "link_6.0", "link_7.0", "link_7.0_tip",
         "link_0.0", "link_1.0", "link_2.0", "link_3.0", "link_3.0_tip",
-    ]
+    ]  # TODO: This format is not really in use, see RightJoints.LINK_INFOS .
 
 
 class RightJoints(CommonJoints):
@@ -190,15 +215,16 @@ class RightJoints(CommonJoints):
 
 if __name__ == "__main__":
     physics_client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
-    p.setGravity(0, 0, 0)
+    p.setGravity(0, 0, -9.8)
     # p.setRealTimeSimulation(1)
 
     PLANE_ID = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "plane.urdf"))
     ROBOT_ID = p.loadURDF(
-        os.path.join("..", "robots", "allegro_hand_description", "allegro_hand_description_right.urdf"))
+        os.path.join("../..", "robots", "xarm6_allegro.urdf")
+    )
     # set the center of mass frame (load URDF sets base line frame)
-    p.resetBasePositionAndOrientation(ROBOT_ID, [0, 0, 1], p.getQuaternionFromEuler([0, 0, 0]))
-
+    p.resetBasePositionAndOrientation(ROBOT_ID, [0, 0, 0], p.getQuaternionFromEuler([0, 0, 0]))
+    target_base_position, target_base_rotation = [0.5, 0.5, 0.5], p.getQuaternionFromEuler([1, 1, 1])
     print("=" * 20)
     print(p.getNumJoints(ROBOT_ID))
     for joint_index in range(p.getNumJoints(ROBOT_ID)):
@@ -216,13 +242,13 @@ if __name__ == "__main__":
     print("=" * 20)
 
     # 可以使用的关节
-    movable_joint_ids = [i for i in range(p.getNumJoints(ROBOT_ID))
-                         if i not in RightJoints.TIP]
-    joint_position = [1.1, 0.6, 0.6, 0.4, 0, 1.2, 0.6, 0.4, 0, 0, 0.2, 0, -0.6, 0, 0.2, 0]
-    print(movable_joint_ids)
+    allegro_joint_ids = [i for i in CommonJoints.get_joints(is_right=True).get_sequence()]
+    movable_joint_ids = [i + 1 for i in range(6)] + [
+        i for i in allegro_joint_ids if i not in CommonJoints.fix_indices(CommonJoints.get_joints(is_right=True).TIP)
+    ][1:]
+    print([JointInfo.joint_info(ROBOT_ID, i).name for i in movable_joint_ids])
 
-    cube_pos, cube_orn = None, None
-    joint_from_root_position = None
+    joint_related_position = None
 
     time_step = 1 / 240
     point_id_list = list()
@@ -232,35 +258,36 @@ if __name__ == "__main__":
         try:
             p.stepSimulation()
 
-            root_position, root_rotation = p.getBasePositionAndOrientation(ROBOT_ID)
-            cube_pos, cube_orn = root_position, root_rotation
-            # print joints
-            joint_points = [root_position] + [
-                tuple(JointInfo.joint_info(ROBOT_ID, i).get_position_rotation())[0]
-                for i in range(p.getNumJoints(ROBOT_ID))
-            ]
-            point_id_list.append(p.addUserDebugPoints(joint_points, [(255, 0, 0)] * (p.getNumJoints(ROBOT_ID) + 1), 3))
+            # plot joints
+            root_position = [tuple(JointInfo.joint_info(ROBOT_ID, allegro_joint_ids[0]).get_position_rotation())[0]]
 
-            joint_related_position = [(0, 0, 0)] + [
-                tuple(JointInfo.joint_info(ROBOT_ID, i).get_root_related_position_rotation())[0]
-                for i in range(p.getNumJoints(ROBOT_ID))
-            ]
-            joint_from_root_position = joint_related_position
+            point_id_list.append(
+                p.addUserDebugPoints(
+                    [tuple(JointInfo.joint_info(ROBOT_ID, i).get_position_rotation())[0] for i in allegro_joint_ids],
+                    [(255, 0, 0)] * len(allegro_joint_ids), 3
+                )
+            )
 
             # p.getCameraImage(480, 320)
 
             target_v = 0
-            max_force = 5
+            max_hand_force = 50
+            max_arm_force = 500
+            target_arm_position = list(p.calculateInverseKinematics(
+                bodyUniqueId=ROBOT_ID,
+                endEffectorLinkIndex=7,
+                targetPosition=target_base_position,
+                targetOrientation=target_base_rotation
+            ))[:6]
             p.setJointMotorControlArray(
                 bodyUniqueId=ROBOT_ID,
                 jointIndices=movable_joint_ids,
                 controlMode=p.POSITION_CONTROL,
-                targetPositions=[0, 1.2, 0.6, 0.4, 0, 0, 0.2, 0, -0.6, 0, 0.2, 0, 1.1, 0.6, 0.6, 0.4],
+                targetPositions=target_arm_position + [1.1, 0.6, 0.6, 0.4, 0, 1.2, 0.6, 0.4, 0, 0, 0.2, 0, -0.6, 0, 0.2, 0],
                 # targetPositions=[0] * 16,
                 targetVelocities=[target_v for _ in movable_joint_ids],
-                forces=[max_force for _ in movable_joint_ids]
+                forces=[max_arm_force for _ in movable_joint_ids[:6]] + [max_hand_force for _ in movable_joint_ids[6:]]
             )
-
             time.sleep(time_step)
             for point_id in point_id_list:
                 p.removeUserDebugItem(point_id)
@@ -268,5 +295,3 @@ if __name__ == "__main__":
         except p.error as e:
             print(e)
             pass
-    import numpy as np
-    np.savetxt("../joints.txt", np.array(joint_from_root_position))
