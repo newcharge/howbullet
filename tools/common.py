@@ -1,5 +1,6 @@
 import torch
-from tools.robot_hands_helper import RightJoints
+
+from tools.simulation.robot_hands_helper import CommonJoints
 
 
 def get_key_point_indices(is_human=True):
@@ -24,7 +25,7 @@ def get_key_vectors(joints, is_human):
 
 def rescale_robot_joint_position(joints):
     assert len(joints.shape) == 2, "joints' shape should be N x 16"
-    joint_infos = [ele for ele in RightJoints.LINK_INFOS if not ele["name"].endswith("tip")]
+    joint_infos = [ele for ele in CommonJoints.get_joints(is_right=True).LINK_INFOS if not ele["name"].endswith("tip")]
     rescaled_joints = list()
     for i in range(joints.shape[1]):
         info = joint_infos[i]

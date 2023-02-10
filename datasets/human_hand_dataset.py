@@ -3,8 +3,9 @@ import os
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
-from tools.io_helper import load_json
+from tools.commons.io_helper import load_json
 from tools.common import get_key_vectors
+from tools.plot_helper import plot_joints_to_rgb
 from tools.torch_canonical.trans import transform_to_canonical
 import torch
 
@@ -31,7 +32,7 @@ class HumanHandDataset(Dataset):
             xyz_path = os.path.join(dataset_dir, f"{mode}_xyz.json")
             self.xyz = torch.tensor(load_json(xyz_path))
 
-            self.xyz_from_canonical, _ = transform_to_canonical(self.xyz, is_human=True)
+            self.xyz_from_canonical, self.canonical_from_world = transform_to_canonical(self.xyz, is_human=True)
             self.key_vector = get_key_vectors(self.xyz_from_canonical, is_human=True)
 
     def __getitem__(self, index):
@@ -42,10 +43,11 @@ class HumanHandDataset(Dataset):
                 "rgb": rgb,  # (224, 224, 3) uint8
                 "K": self.K[index],  # (3, 3) float
                 "scale": self.scale[index],  # float
-                "xyz_input": self.xyz[index].flatten(),
+                "xyz_input": self.xyz[index].flatten(),  # * (63, ) float
                 "xyz": self.xyz[index],  # (21, 3) float
-                "key_vectors": self.key_vector[index],  # (10, 3) float
-                "canonical_xyz": self.xyz_from_canonical[index],
+                "key_vectors": self.key_vector[index],  # * (10, 3) float
+                "canonical_xyz": self.xyz_from_canonical[index],  # (21, 3) float
+                "TCaW": self.canonical_from_world[index],  # (4, 4) float
                 # "vert" = self.vert[index],  # point cloud, large data !
 
             }
@@ -64,13 +66,6 @@ class HumanHandDataset(Dataset):
 if __name__ == "__main__":
     dataset = HumanHandDataset("..//FreiHAND_pub_v2")
     vis_roi = dataset[300]
-    K = vis_roi["K"].numpy()
-    joints = vis_roi["xyz"].numpy()
-    coordinate = vis_roi["xyz"].numpy().copy()
-    x2d = K @ coordinate.T
-    x2d[:2, :] /= x2d[2, :]
-    plt.clf()
-    plt.imshow(vis_roi["rgb"])
-    plt.plot(x2d[0], x2d[1], ".")
-    plt.show()
+    plot_joints_to_rgb(rgb=vis_roi["rgb"], intrinsics=vis_roi["K"].numpy(), joints3d=vis_roi["xyz"].numpy())
+    joints = vis_roi["xyz"].numpy().copy()
     np.savetxt("../h_joints.txt", joints - joints[0, :])

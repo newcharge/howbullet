@@ -1,6 +1,7 @@
-import tools.torch_fk as fk
-from tools.robot_hands_helper import CommonJoints
 import torch
+
+import tools.torch_fk as fk
+from tools.simulation.robot_hands_helper import CommonJoints
 
 
 def get_chains(urdf_path, use_gpu=False, device=None):
@@ -15,7 +16,7 @@ def get_chains(urdf_path, use_gpu=False, device=None):
 
 
 def robot_joint_angle_to_coordinate(chains, robot_joint_angles):
-    root_position_from_base = -1 * torch.tensor([list(CommonJoints.OR_POSITION)] * robot_joint_angles.shape[0])
+    root_position_from_base = -1 * torch.tensor([list(CommonJoints.BASE_FROM_ROOT_POSITION)] * robot_joint_angles.shape[0])
     joint_coordinates, joint_count = [root_position_from_base.view(-1, 3).to(device=robot_joint_angles.device)], 0
     for chain_index in range(len(chains)):
         results = chains[chain_index].forward_kinematics(
