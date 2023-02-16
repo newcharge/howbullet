@@ -5,7 +5,7 @@ from datasets.human_hand_dataset import HumanHandDataset
 from datasets.common import split_dataset
 from losses.energy_loss import cal_loss
 import tools.fk_helper as fk
-import tqdm
+from tqdm import tqdm
 import hydra
 import wandb
 import logging
@@ -36,7 +36,7 @@ def main(cfg):
     torch.save(test_dataset, cfg.output_test_dataset_path)
     log.info(f"{len(train_dataset)} {len(validation_dataset)} {len(test_dataset)}")
     train_dataloader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)
-    validation_loader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=False)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=False)
 
     net = RetargetingMLP(chains=chains).to(device=device)
     optimizer = torch.optim.Adam(net.parameters(), lr=cfg.lr)
@@ -44,7 +44,7 @@ def main(cfg):
 
     for i in range(cfg.epoch_num):
         net.train()
-        loop = tqdm.tqdm(enumerate(train_dataloader), total=len(train_dataloader))
+        loop = tqdm(enumerate(train_dataloader), total=len(train_dataloader))
         total_energy = 0
         passed_num = 0
         for _, roi in loop:
@@ -69,7 +69,7 @@ def main(cfg):
         train_energy = total_energy / passed_num
         net.eval()
         with torch.no_grad():
-            loop = tqdm.tqdm(enumerate(validation_loader), total=len(validation_loader))
+            loop = tqdm(enumerate(validation_dataloader), total=len(validation_dataloader))
             total_energy = 0
             passed_num = 0
             for _, roi in loop:

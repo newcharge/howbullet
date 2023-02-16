@@ -7,4 +7,4 @@ collision_epsilon: 1e-6
 robotic_hand_urdf_path: robots/allegro_hand_description/allegro_hand_description_right.urdf
 hand_dataset_dir: FreiHAND_pub_v2
 output_test_dataset_path: test_dataset.pth
-output_model_path: model_100epoch_02081655.pth
+output_model_path: model_${epoch_num}epoch_02081655.pth

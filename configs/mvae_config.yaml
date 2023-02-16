@@ -1,0 +1,25 @@
+# A: Dataset
+dataset_dir: HO3D_v3/train
+# usual setting
+#train_sequences: ["ABF10", "BB10", "GPMF10", "GSF10", "MDF10", "SB10", "ShSu10"]
+#val_sequences: ["SiBF10", "SMu40"]
+
+# self-test setting
+#train_sequences: ["ABF10", "BB10", "GPMF10", "GSF10", "MDF10", "SB10", "ShSu10"]
+#val_sequences: ["ABF10", "BB10", "GPMF10", "GSF10", "MDF10", "SB10", "ShSu10"]
+
+# quick self-test setting
+train_sequences: ["ABF10"]
+val_sequences: ["ABF10"]
+
+# B: Training
+lr: 1e-4
+epoch_num: 100
+batch_size: 64
+max_kl_beta: 1e-4
+output_model_path: mvae_model_${epoch_num}epoch_02151914.pth
+normalize: True
+beta_increment: True
+
+# C: Visualizing
+model_path: ${output_model_path}
