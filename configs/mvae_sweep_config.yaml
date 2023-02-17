@@ -8,7 +8,7 @@ parameters:
     max: 0.002
     min: 0.00005
     distribution: uniform
-  deta_frame_step:
+  data_frame_step:
     max: 5
     min: 1
     distribution: int_uniform

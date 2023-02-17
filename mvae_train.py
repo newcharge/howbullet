@@ -60,12 +60,12 @@ def main(cfg):
 
     train_dataset = TrajectoryDataset(
         cfg.dataset_dir, is_training=True, claimed_sequences=cfg.train_sequences,
-        step=cfg.deta_frame_step
+        step=cfg.data_frame_step
     )
     train_data_max, train_data_min = train_dataset.get_max_min()
     validation_dataset = TrajectoryDataset(
         cfg.dataset_dir, is_training=False, claimed_sequences=cfg.val_sequences,
-        data_max=train_data_max, data_min=train_data_min, step=cfg.deta_frame_step
+        data_max=train_data_max, data_min=train_data_min, step=cfg.data_frame_step
     )
     train_dataloader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=False)
