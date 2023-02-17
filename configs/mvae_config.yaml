@@ -1,5 +1,6 @@
 # A: Dataset
 dataset_dir: HO3D_v3/train
+deta_frame_step: 2
 # usual setting
 #train_sequences: ["ABF10", "BB10", "GPMF10", "GSF10", "MDF10", "SB10", "ShSu10"]
 #val_sequences: ["SiBF10", "SMu40"]

@@ -48,7 +48,7 @@ def mapping_to_simple(mano_joints):
 
 
 class TrajectoryDataset(Dataset):
-    def __init__(self, dataset_dir, is_training=True, claimed_sequences=None, data_max=None, data_min=None):
+    def __init__(self, dataset_dir, is_training=True, claimed_sequences=None, data_max=None, data_min=None, step=1):
         super().__init__()
         self.formal_joints3d = list()
         self.recenter_joints3d = list()
@@ -71,17 +71,17 @@ class TrajectoryDataset(Dataset):
             filenames = [n for n in os.listdir(param_dir) if _get_suffix(n) == suffix]
             param_paths = sorted([os.path.join(param_dir, f) for f in filenames])
             seq_joints3d = list()
-            last = -1
+            visited = list()
             for idx, param_path in enumerate(param_paths):
                 data = load_pickle(param_path)
                 joints3d = data["handJoints3D"]
                 if joints3d is None:
                     continue
                 frame_id = int(param_path.split(os.path.sep)[-1].split(".")[0])
-                if 0 <= last and last + 1 == frame_id:
-                    self.mapping.append((sid, len(seq_joints3d) - 1))
+                visited.append(frame_id)
                 seq_joints3d.append(_transform(joints3d @ ogl_mat.T, trans))
-                last = frame_id
+                if frame_id - step in visited:
+                    self.mapping.append((sid, visited.index(frame_id - step), len(visited) - 1))
             seq_joints3d = np.stack(seq_joints3d)
             self.formal_joints3d.append(seq_joints3d)
             self.recenter_joints3d.append(_recenter(seq_joints3d))
@@ -92,9 +92,9 @@ class TrajectoryDataset(Dataset):
 
     def __getitem__(self, index):
         joints3d = self.recenter_joints3d
-        sid, condition = self.mapping[index]
+        sid, condition, future = self.mapping[index]
         condition_frame = torch.from_numpy(joints3d[sid][condition].astype(np.float32))
-        future_frame = torch.from_numpy(joints3d[sid][condition + 1].astype(np.float32))
+        future_frame = torch.from_numpy(joints3d[sid][future].astype(np.float32))
         roi = {
             "condition_frame": condition_frame,
             "future_frame": future_frame
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     # sequences = ["ABF10"]
     # colors = [[1, 0, 0]]
 
-    dataset = TrajectoryDataset("..\\HO3D_v3\\train", is_training=True, claimed_sequences=sequences)
+    dataset = TrajectoryDataset("..\\HO3D_v3\\train", is_training=True, claimed_sequences=sequences, step=2)
     data_max, data_min = dataset.get_max_min()
     normal_joints3d = [2 * (s - data_min) / (data_max - data_min) - 1 for s in dataset.recenter_joints3d]
     formal_joints3d = dataset.formal_joints3d

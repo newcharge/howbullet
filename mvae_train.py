@@ -58,11 +58,14 @@ def main(cfg):
         log.info("using CPU ...")
         device = torch.device("cpu")
 
-    train_dataset = TrajectoryDataset(cfg.dataset_dir, is_training=True, claimed_sequences=cfg.train_sequences)
+    train_dataset = TrajectoryDataset(
+        cfg.dataset_dir, is_training=True, claimed_sequences=cfg.train_sequences,
+        step=cfg.deta_frame_step
+    )
     train_data_max, train_data_min = train_dataset.get_max_min()
     validation_dataset = TrajectoryDataset(
         cfg.dataset_dir, is_training=False, claimed_sequences=cfg.val_sequences,
-        data_max=train_data_max, data_min=train_data_min
+        data_max=train_data_max, data_min=train_data_min, step=cfg.deta_frame_step
     )
     train_dataloader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=False)
@@ -112,7 +115,9 @@ def main(cfg):
                 for roi in eval_loop:
                     x_input, c_input = get_feed_input(net, roi, cfg.normalize)
                     _, output, m, v = feed_net(net, x_input, c_input, device, cfg.normalize)
-                    kl_loss, recon_loss, loss, batch_size = cal_losses(output, m, v, x_input, cfg.max_kl_beta, frame_size)
+                    kl_loss, recon_loss, loss, batch_size = cal_losses(
+                        output, m, v, x_input, cfg.max_kl_beta, frame_size
+                    )
 
                     total_recon_loss += recon_loss.item() * batch_size
                     total_kl_loss += kl_loss.item() * batch_size
