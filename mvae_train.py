@@ -48,7 +48,7 @@ def cal_losses(output, m, v, gt, beta, frame_size):
 
 @hydra.main(version_base=None, config_path="configs", config_name="mvae_config")
 def main(cfg):
-    wandb.init(project="mvae_train", entity="howbullet", config=OmegaConf.to_container(cfg, resolve=True))
+    wandb.init(project=cfg.wandb_project, entity=cfg.wandb_entity, config=OmegaConf.to_container(cfg, resolve=True))
 
     frame_size = 21 * 3
     if torch.cuda.is_available():
@@ -76,14 +76,15 @@ def main(cfg):
         beta = np.linspace(0, cfg.max_kl_beta, cfg.epoch_num, endpoint=False)
     else:
         beta = np.array([cfg.max_kl_beta] * cfg.epoch_num)
-    for i in range(cfg.epoch_num):
+    train_loop = tqdm(range(cfg.epoch_num))
+    log_dict = dict()
+    for i in train_loop:
         net.train()
-        loop = tqdm(enumerate(train_dataloader), total=len(train_dataloader))
         total_recon_loss = 0
         total_kl_loss = 0
         total_loss = 0
         passed_num = 0
-        for _, roi in loop:
+        for roi in train_dataloader:
             x_input, c_input = get_feed_input(net, roi, cfg.normalize)
             _, output, m, v = feed_net(net, x_input, c_input, device, cfg.normalize)
             kl_loss, recon_loss, loss, batch_size = cal_losses(output, m, v, x_input, beta[i], frame_size)
@@ -96,37 +97,33 @@ def main(cfg):
             total_kl_loss += kl_loss.item() * batch_size
             total_loss += loss.item() * batch_size
             passed_num += batch_size
-            loop.set_description(f"Epoch [{i + 1}/{cfg.epoch_num}]")
-            loop.set_postfix(loss=total_loss / passed_num)
-        train_recon_loss = total_recon_loss / passed_num
-        train_kl_loss = total_kl_loss / passed_num
-        train_loss = total_loss / passed_num
-        with torch.no_grad():
-            loop = tqdm(enumerate(validation_dataloader), total=len(validation_dataloader))
-            total_recon_loss = 0
-            total_kl_loss = 0
-            total_loss = 0
-            passed_num = 0
-            for _, roi in loop:
-                x_input, c_input = get_feed_input(net, roi, cfg.normalize)
-                _, output, m, v = feed_net(net, x_input, c_input, device, cfg.normalize)
-                kl_loss, recon_loss, loss, batch_size = cal_losses(output, m, v, x_input, cfg.max_kl_beta, frame_size)
+        log_dict["train_recon"] = total_recon_loss / passed_num
+        log_dict["train_kl"] = total_kl_loss / passed_num
+        log_dict["train_loss"] = total_loss / passed_num
+        train_loop.set_description(f"Epoch [{i + 1}/{cfg.epoch_num}]")
+        train_loop.set_postfix(loss=log_dict["train_loss"])
+        if 0 < cfg.eval_every_epoch and (i + 1) % cfg.eval_every_epoch == 0:
+            with torch.no_grad():
+                total_recon_loss = 0
+                total_kl_loss = 0
+                total_loss = 0
+                passed_num = 0
+                eval_loop = tqdm(validation_dataloader)
+                for roi in eval_loop:
+                    x_input, c_input = get_feed_input(net, roi, cfg.normalize)
+                    _, output, m, v = feed_net(net, x_input, c_input, device, cfg.normalize)
+                    kl_loss, recon_loss, loss, batch_size = cal_losses(output, m, v, x_input, cfg.max_kl_beta, frame_size)
 
-                total_recon_loss += recon_loss.item() * batch_size
-                total_kl_loss += kl_loss.item() * batch_size
-                total_loss += loss.item() * batch_size
-                passed_num += batch_size
-                loop.set_description(f"Epoch [{i + 1}/{cfg.epoch_num}]")
-                loop.set_postfix(loss=total_loss / passed_num)
-            val_recon_loss = total_recon_loss / passed_num
-            val_kl_loss = total_kl_loss / passed_num
-            val_loss = total_loss / passed_num
+                    total_recon_loss += recon_loss.item() * batch_size
+                    total_kl_loss += kl_loss.item() * batch_size
+                    total_loss += loss.item() * batch_size
+                    passed_num += batch_size
+                log_dict["val_recon"] = total_recon_loss / passed_num
+                log_dict["val_kl"] = total_kl_loss / passed_num
+                log_dict["val_loss"] = total_loss / passed_num
+                eval_loop.set_postfix(loss=log_dict["val_loss"])
         # logging
-        wandb.log({
-            "train_loss": train_loss, "val_loss": val_loss,
-            "train_recon": train_recon_loss, "val_recon": val_recon_loss,
-            "train_kl": train_kl_loss, "val_kl": val_kl_loss,
-        })
+        wandb.log(log_dict)
 
     # dump results
     torch.save(net, cfg.output_model_path)

@@ -1,0 +1,28 @@
+program: mvae_train.py
+method: bayes
+metric:
+  goal: minimize
+  name: val_recon
+parameters:
+  lr:
+    max: 0.002
+    min: 0.00005
+    distribution: uniform
+  batch_size:
+    max: 128
+    min: 32
+    distribution: int_uniform
+  max_kl_beta:
+    max: 2
+    min: 0.00005
+    distribution: uniform
+  beta_increment:
+    values:
+      - True
+      - False
+    distribution: categorical
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

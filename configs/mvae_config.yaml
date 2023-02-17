@@ -14,12 +14,21 @@ val_sequences: ["ABF10"]
 
 # B: Training
 lr: 1e-4
-epoch_num: 100
+epoch_num: 1000
 batch_size: 64
 max_kl_beta: 1e-4
-output_model_path: mvae_model_${epoch_num}epoch_02151914.pth
+#output_model_path: mvae_model_${epoch_num}epoch.pth
+output_model_path: mvae_model_sweep.pth
 normalize: True
 beta_increment: True
 
-# C: Visualizing
+# C: eval
+eval_every_epoch: 100
+
+# D: Visualizing
 model_path: ${output_model_path}
+#model_path: quick_self-test_mvae_model_10000epoch_02161650.pth
+
+# Others
+wandb_entity: howbullet
+wandb_project: mvae_train
