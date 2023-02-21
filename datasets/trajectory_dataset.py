@@ -147,7 +147,7 @@ if __name__ == "__main__":
     # sequences = ["ABF10"]
     # colors = [[1, 0, 0]]
 
-    dataset = TrajectoryDataset("..\\HO3D_v3\\train", is_training=True, claimed_sequences=sequences, step=2)
+    dataset = TrajectoryDataset("..\\HO3D_v3\\train", is_training=True, claimed_sequences=sequences)
     data_max, data_min = dataset.get_max_min()
     normal_joints3d = [2 * (s - data_min) / (data_max - data_min) - 1 for s in dataset.recenter_joints3d]
     formal_joints3d = dataset.formal_joints3d
