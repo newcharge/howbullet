@@ -15,35 +15,27 @@ from networks.pose_refining import PoseMixtureVAE
 log = logging.getLogger(__name__)
 
 
-def get_feed_input(net, roi, normalize):
-    flatten_future = roi["future_frame"].flatten(start_dim=1, end_dim=2)
-    flatten_condition = roi["condition_frame"].flatten(start_dim=1, end_dim=2)
-    x_input = flatten_future
-    c_input = flatten_condition
-    if normalize:
-        x_input = net.normalize(x_input)
-        c_input = net.normalize(c_input)
-    return x_input, c_input
+def get_feed_inputs(roi):
+    flatten_futures = roi["future_frames"].flatten(start_dim=-2, end_dim=-1)
+    flatten_conditions = roi["condition_frames"].flatten(start_dim=-2, end_dim=-1)
+    futures = flatten_futures
+    conditions = flatten_conditions
+    assert futures.shape[-2] == roi["pairs_num"][0] and conditions.shape[-2] == roi["pairs_num"][0], \
+        "The size of fragments do not meet the requirements!"
+    return futures, conditions
 
 
-def feed_net(net, x_input, c_input, device, normalize):
-    x_input = x_input.to(device=device)
-    c_input = c_input.to(device=device)
-    output, m, v = net(x_input, c_input)
-    if normalize:
-        former_output = net.denormalize(output)
-    else:
-        former_output = output
-    return former_output, output, m, v
+def feed_net(net, input_x, input_c, device, beta, frame_size):
+    x = input_x.to(device=device)
+    c = input_c.to(device=device)
+    output, m, v = net(x, c)
 
-
-def cal_losses(output, m, v, gt, beta, frame_size):
     output_shape = (-1, frame_size)
     output = output.view(output_shape)
-    recon_loss = cal_recon_loss(output.cpu(), gt)
+    recon_loss = cal_recon_loss(output.cpu(), input_x)
     kl_loss = cal_kl_loss(m, v)
     loss = recon_loss + beta * kl_loss
-    return kl_loss, recon_loss, loss, output.shape[0]
+    return output, kl_loss, recon_loss, loss, output.shape[0]
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="mvae_config")
@@ -59,13 +51,12 @@ def main(cfg):
         device = torch.device("cpu")
 
     train_dataset = TrajectoryDataset(
-        cfg.dataset_dir, is_training=True, claimed_sequences=cfg.train_sequences,
-        step=cfg.data_frame_step
+        cfg.dataset_dir, is_training=True, claimed_sequences=cfg.train_sequences, length=cfg.max_continuous_mapping
     )
     train_data_max, train_data_min = train_dataset.get_max_min()
     validation_dataset = TrajectoryDataset(
         cfg.dataset_dir, is_training=False, claimed_sequences=cfg.val_sequences,
-        data_max=train_data_max, data_min=train_data_min, step=cfg.data_frame_step
+        data_max=train_data_max, data_min=train_data_min, length=cfg.max_continuous_mapping
     )
     train_dataloader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=False)
@@ -88,18 +79,37 @@ def main(cfg):
         total_loss = 0
         passed_num = 0
         for roi in train_dataloader:
-            x_input, c_input = get_feed_input(net, roi, cfg.normalize)
-            _, output, m, v = feed_net(net, x_input, c_input, device, cfg.normalize)
-            kl_loss, recon_loss, loss, batch_size = cal_losses(output, m, v, x_input, beta[i], frame_size)
+            futures, conditions = get_feed_inputs(roi)
+            last_output = None
+            fragment_kl, fragment_recon, fragment_loss = 0, 0, 0
+            for pid in range(futures.shape[-2] - 1):
+                x, c = futures[:, pid, :], conditions[:, pid, :]
+                if cfg.input_pred and 0 < pid:
+                    c = last_output
+                if cfg.normalize:
+                    x_input, c_input = net.normalize(x), net.normalize(c)
+                else:
+                    x_input, c_input = x, c
+                output, kl_loss, recon_loss, loss, batch_size = feed_net(
+                    net, x_input, c_input, device, beta[i], frame_size
+                )
+                if cfg.normalize:
+                    output = net.denormalize(output)
+                last_output = output.detach()
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            total_recon_loss += recon_loss.item() * batch_size
-            total_kl_loss += kl_loss.item() * batch_size
-            total_loss += loss.item() * batch_size
+                fragment_kl += kl_loss.item()
+                fragment_recon += recon_loss.item()
+                fragment_loss += loss.item()
+
+            total_kl_loss += fragment_kl * batch_size
+            total_recon_loss += fragment_recon * batch_size
+            total_loss += fragment_loss * batch_size
             passed_num += batch_size
+
         log_dict["train_recon"] = total_recon_loss / passed_num
         log_dict["train_kl"] = total_kl_loss / passed_num
         log_dict["train_loss"] = total_loss / passed_num
@@ -113,16 +123,33 @@ def main(cfg):
                 passed_num = 0
                 eval_loop = tqdm(validation_dataloader)
                 for roi in eval_loop:
-                    x_input, c_input = get_feed_input(net, roi, cfg.normalize)
-                    _, output, m, v = feed_net(net, x_input, c_input, device, cfg.normalize)
-                    kl_loss, recon_loss, loss, batch_size = cal_losses(
-                        output, m, v, x_input, cfg.max_kl_beta, frame_size
-                    )
+                    futures, conditions = get_feed_inputs(roi)
+                    last_output = None
+                    fragment_kl, fragment_recon, fragment_loss = 0, 0, 0
+                    for pid in range(futures.shape[-2] - 1):
+                        x, c = futures[:, pid, :], conditions[:, pid, :]
+                        if cfg.input_pred and 0 < pid:
+                            c = last_output
+                        if cfg.normalize:
+                            x_input, c_input = net.normalize(x), net.normalize(c)
+                        else:
+                            x_input, c_input = x, c
+                        output, kl_loss, recon_loss, loss, batch_size = feed_net(
+                            net, x_input, c_input, device, beta[i], frame_size
+                        )
+                        if cfg.normalize:
+                            output = net.denormalize(output)
+                        last_output = output.detach()
 
-                    total_recon_loss += recon_loss.item() * batch_size
-                    total_kl_loss += kl_loss.item() * batch_size
-                    total_loss += loss.item() * batch_size
+                        fragment_kl += kl_loss.item()
+                        fragment_recon += recon_loss.item()
+                        fragment_loss += loss.item()
+
+                    total_kl_loss += fragment_kl * batch_size
+                    total_recon_loss += fragment_recon * batch_size
+                    total_loss += fragment_loss * batch_size
                     passed_num += batch_size
+
                 log_dict["val_recon"] = total_recon_loss / passed_num
                 log_dict["val_kl"] = total_kl_loss / passed_num
                 log_dict["val_loss"] = total_loss / passed_num

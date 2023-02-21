@@ -1,6 +1,7 @@
 # A: Dataset
 dataset_dir: HO3D_v3/train
-data_frame_step: 2
+max_continuous_mapping: 8
+data_frame_step: 1
 # usual setting
 #train_sequences: ["ABF10", "BB10", "GPMF10", "GSF10", "MDF10", "SB10", "ShSu10"]
 #val_sequences: ["SiBF10", "SMu40"]
@@ -16,19 +17,18 @@ val_sequences: ["ABF10"]
 # B: Training
 lr: 1e-4
 epoch_num: 1000
-batch_size: 64
-max_kl_beta: 1e-4
-#output_model_path: mvae_model_${epoch_num}epoch.pth
-output_model_path: mvae_model_sweep.pth
+batch_size: 128
+max_kl_beta: 0.01
+output_model_path: mvae_model_${epoch_num}epoch_quick_selftest.pth
 normalize: True
 beta_increment: True
+input_pred: True
 
 # C: eval
 eval_every_epoch: 100
 
 # D: Visualizing
 model_path: ${output_model_path}
-#model_path: quick_self-test_mvae_model_10000epoch_02161650.pth
 
 # Others
 wandb_entity: howbullet

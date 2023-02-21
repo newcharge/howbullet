@@ -48,9 +48,7 @@ def mapping_to_simple(mano_joints):
 
 
 class TrajectoryDataset(Dataset):
-    def __init__(
-            self, dataset_dir, is_training=True, claimed_sequences=None, data_max=None, data_min=None, length=8
-    ):
+    def __init__(self, dataset_dir, is_training=True, claimed_sequences=None, data_max=None, data_min=None, step=1):
         super().__init__()
         self.formal_joints3d = list()
         self.recenter_joints3d = list()
@@ -72,34 +70,21 @@ class TrajectoryDataset(Dataset):
             trans = _load_trans(dataset_dir, seq)
             filenames = [n for n in os.listdir(param_dir) if _get_suffix(n) == suffix]
             param_paths = sorted([os.path.join(param_dir, f) for f in filenames])
-            available_frames = list()
             seq_joints3d = list()
+            visited = list()
             for idx, param_path in enumerate(param_paths):
                 data = load_pickle(param_path)
                 joints3d = data["handJoints3D"]
                 if joints3d is None:
                     continue
-                available_frames.append(int(param_path.split(os.path.sep)[-1].split(".")[0]))
+                frame_id = int(param_path.split(os.path.sep)[-1].split(".")[0])
+                visited.append(frame_id)
                 seq_joints3d.append(_transform(joints3d @ ogl_mat.T, trans))
+                if frame_id - step in visited:
+                    self.mapping.append((sid, visited.index(frame_id - step), len(visited) - 1))
             seq_joints3d = np.stack(seq_joints3d)
             self.formal_joints3d.append(seq_joints3d)
             self.recenter_joints3d.append(_recenter(seq_joints3d))
-            # mapping
-            window = list()
-            for idx in range(len(available_frames)):
-                if length + 1 == len(window):
-                    window.pop(0)
-                window.append(idx)
-                if len(window) == 1:
-                    continue
-                wi = 0
-                for _ in range(len(window) - 1):
-                    if available_frames[window[wi]] + 1 == available_frames[window[wi + 1]]:
-                        wi += 1
-                if wi == 0:
-                    continue
-                if wi == length:  # TODO: Do we have any way but dropping uneven fragments ?
-                    self.mapping.append((sid, window[0], window[wi]))
         self.data_max, self.data_min = data_max, data_min  # max-min
         if is_training:
             self.data_max = max([np.max(s) for s in self.recenter_joints3d])
@@ -107,13 +92,12 @@ class TrajectoryDataset(Dataset):
 
     def __getitem__(self, index):
         joints3d = self.recenter_joints3d
-        sid, idx_from, idx_to = self.mapping[index]
-        condition_frames = torch.from_numpy(joints3d[sid][[t for t in range(idx_from, idx_to)]].astype(np.float32))
-        future_frames = torch.from_numpy(joints3d[sid][[t + 1 for t in range(idx_from, idx_to)]].astype(np.float32))
+        sid, condition, future = self.mapping[index]
+        condition_frame = torch.from_numpy(joints3d[sid][condition].astype(np.float32))
+        future_frame = torch.from_numpy(joints3d[sid][future].astype(np.float32))
         roi = {
-            "condition_frames": condition_frames,
-            "future_frames": future_frames,
-            "pairs_num": idx_to - idx_from
+            "condition_frame": condition_frame,
+            "future_frame": future_frame
         }
         return roi
 
