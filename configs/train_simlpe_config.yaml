@@ -1,0 +1,74 @@
+# A: Environment Config
+train_dataset_dir: Hand_pose_annotation_v1
+eval_dataset_dir: HO3D_v3/train
+seed: 888
+
+# B: Dataset Config
+motion:
+  step: 1
+  input_length: 50
+  input_length_dct: ${motion.input_length}
+  dim: 63
+
+  train_target_length: 10
+  eval_target_length: 25
+  normalize_train_data: False
+  subjects: [1, 2, 3, 4, 5, 6]
+  sequences: ["ABF10", "BB10", "GPMF10", "GSF10", "MDF10", "SB10", "ShSu10", "SiBF10", "SMu40"]
+
+
+data_aug: True
+deriv_output: True
+use_relative_loss: True
+
+# C: Model Config
+pre_dct: False
+post_dct: False
+hidden_dim: 63
+motion_mlp:
+  hidden_dim: ${hidden_dim}
+  seq_len: ${motion.input_length_dct}
+  num_layers: 16
+  with_normalization: True
+  spatial_fc: True
+  norm_axis: spatial
+
+motion_fc_in:
+  in_features: ${motion.dim}
+  out_features: ${hidden_dim}
+  with_norm: False
+  activation: relu
+  init_w_trunc_normal: False
+  temporal_fc: True
+
+motion_fc_out:
+  in_features: ${hidden_dim}
+  out_features: ${motion.dim}
+  with_norm: False
+  activation: relu
+  init_w_trunc_normal: True
+  temporal_fc: True
+
+# D: Training Config
+batch_size: 128
+num_workers: 0
+#total_iters: 40000
+total_iters: 200000
+#lr_max: 3e-4
+#lr_min: 1e-5
+lr_max: 1e-4
+lr_min: 1e-4
+weight_decay: 1e-4
+model_pth: ""
+
+# E: Evaluation Config
+shift_step: 1
+metrics: ["MPJPE", "ROOT_Related_MPJPE"]
+
+# E: Display Config
+eval_every: 1000
+save_every: 5000
+
+# Others
+wandb_entity: howbullet
+wandb_project: simlpe_train
