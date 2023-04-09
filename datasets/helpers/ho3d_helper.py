@@ -56,7 +56,7 @@ class HO3DHelper:
         return all_frame_ids, prepared_joints3d
 
     def load_trans(self, sequence_name):
-        calibrate_root = os.path.join(self.data_dir, "../..", self.calibration_dir_name)
+        calibrate_root = os.path.join(self.data_dir, "..", self.calibration_dir_name)
         assert sequence_name[:-1] in os.listdir(calibrate_root), \
             "Sequence name should be composed of ExperimentID+CameraOrderID(1 digit), such as ABF10, BB10, etc."
         calibrate_dir = os.path.join(calibrate_root, sequence_name[:-1], "calibration")
