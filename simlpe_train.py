@@ -1,4 +1,5 @@
 import logging
+import os
 
 import hydra
 import wandb
@@ -86,6 +87,12 @@ def main(cfg):
                 loop.set_postfix(loss=total_loss / iter_count)
 
                 log_dict = {"train_loss": loss, "lr": current_lr}
+
+                if 0 < cfg.save_every and (n_iter + 1) % cfg.save_every == 0:
+                    output_dir = os.path.join(cfg.save_dir, f"output_{cfg.exp_id}")
+                    os.makedirs(output_dir, exist_ok=True)
+                    output_path = os.path.join(output_dir, f"model_{n_iter + 1}.pth")
+                    torch.save(model, output_path)
 
                 if 0 < cfg.eval_every and (n_iter + 1) % cfg.eval_every == 0:
                     model.eval()

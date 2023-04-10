@@ -12,6 +12,7 @@ class FPHATrajectoryDataset(TrajectoryDataset):
     ):
         super().__init__()
         frame_ids, joints3d = FPHAHelper(data_dir=data_dir, claimed_subjects=subjects).prepare_data()
+        joints3d = [FPHATrajectoryDataset.mapping_to_simple(j) for j in joints3d]
         self.past_init(
             frame_ids=frame_ids, joints3d=joints3d, is_training=is_training, use_norm=use_norm,
             condition_num=condition_num, future_num=future_num, frame_step=frame_step,
@@ -20,15 +21,15 @@ class FPHATrajectoryDataset(TrajectoryDataset):
         self.set_mapping()
 
     @staticmethod
-    def mapping_to_simple(mano_joints):
-        return mano_joints[[
+    def mapping_to_simple(fpha_joints):
+        return fpha_joints[..., [
             0,
             1, 6, 7, 8,
             2, 9, 10, 11,
             3, 12, 13, 14,
             4, 15, 16, 17,
             5, 18, 19, 20
-        ]]
+        ], :]
 
 
 if __name__ == "__main__":

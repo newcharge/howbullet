@@ -13,6 +13,7 @@ class HO3DTrajectoryDataset(TrajectoryDataset):
         super().__init__()
         frame_ids, joints3d = HO3DHelper(data_dir=data_dir, claimed_sequences=sequences)\
             .prepare_data()
+        joints3d = [HO3DTrajectoryDataset.mapping_to_simple(j) for j in joints3d]
         self.past_init(
             frame_ids=frame_ids, joints3d=joints3d, is_training=is_training, use_norm=use_norm,
             condition_num=condition_num, future_num=future_num, frame_step=frame_step,
@@ -22,14 +23,14 @@ class HO3DTrajectoryDataset(TrajectoryDataset):
 
     @staticmethod
     def mapping_to_simple(mano_joints):
-        return mano_joints[[
+        return mano_joints[..., [
             0,
             13, 14, 15, 16,
             1, 2, 3, 17,
             4, 5, 6, 18,
             10, 11, 12, 19,
             7, 8, 9, 20
-        ]]
+        ], :]
 
 
 if __name__ == "__main__":

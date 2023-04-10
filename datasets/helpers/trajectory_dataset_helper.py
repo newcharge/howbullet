@@ -86,4 +86,4 @@ class TrajectoryDataset(Dataset):
 
     @staticmethod
     def mapping_to_simple(mano_joints):
-        return mano_joints
+        return mano_joints[..., range(len(mano_joints.shape[-2])), :]
