@@ -189,7 +189,7 @@ class RightJoints(CommonJoints):
 
 
 if __name__ == "__main__":
-    physics_client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
+    physics_client = p.connect(p.DIRECT)  # or p.DIRECT for non-graphical version
     p.setGravity(0, 0, 0)
     # p.setRealTimeSimulation(1)
 

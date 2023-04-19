@@ -1,0 +1,169 @@
+{
+    "os": "Linux-5.4.0-128-generic-x86_64-with-glibc2.17",
+    "python": "3.8.16",
+    "heartbeatAt": "2023-03-30T13:58:11.966333",
+    "startedAt": "2023-03-30T13:58:08.484002",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "train_classifier.py",
+    "codePath": "train_classifier.py",
+    "git": {
+        "remote": "https://github.com/newcharge/howbullet.git",
+        "commit": "8955438e82e89f77e3ab02ea8a79912f748aca18"
+    },
+    "email": null,
+    "root": "/media/sdc/haosheng23/baseline/howbullet",
+    "host": "baowen-System-Product-Name",
+    "username": "qwt",
+    "executable": "/media/sdc/qwt/anaconda3/envs/howbullet/bin/python",
+    "cpu_count": 12,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 1227.7002916666668,
+        "min": 1200.0,
+        "max": 4650.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1200.371,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1289.171,
+            "min": 1200.0,
+            "max": 4700.0
+        },
+        {
+            "current": 1200.107,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.202,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1199.788,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.192,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1201.044,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1259.1,
+            "min": 1200.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1200.096,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1294.352,
+            "min": 1200.0,
+            "max": 4700.0
+        },
+        {
+            "current": 1289.255,
+            "min": 1200.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1200.192,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.182,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1270.166,
+            "min": 1200.0,
+            "max": 4700.0
+        },
+        {
+            "current": 1200.168,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.224,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.987,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.527,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.086,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1284.272,
+            "min": 1200.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1200.926,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1289.791,
+            "min": 1200.0,
+            "max": 4700.0
+        },
+        {
+            "current": 1282.526,
+            "min": 1200.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1201.082,
+            "min": 1200.0,
+            "max": 4600.0
+        }
+    ],
+    "disk": {
+        "total": 438.5479202270508,
+        "used": 412.768798828125
+    },
+    "gpu": "GeForce RTX 3080",
+    "gpu_count": 2,
+    "gpu_devices": [
+        {
+            "name": "GeForce RTX 3080",
+            "memory_total": 10504699904
+        },
+        {
+            "name": "GeForce RTX 3080",
+            "memory_total": 10502078464
+        }
+    ],
+    "memory": {
+        "total": 62.50411605834961
+    }
+}

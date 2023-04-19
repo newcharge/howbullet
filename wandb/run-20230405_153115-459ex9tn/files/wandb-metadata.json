@@ -1,0 +1,178 @@
+{
+    "os": "Linux-5.4.0-146-generic-x86_64-with-glibc2.17",
+    "python": "3.8.16",
+    "heartbeatAt": "2023-04-05T07:31:18.461424",
+    "startedAt": "2023-04-05T07:31:15.876359",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--epoch",
+        "75",
+        "--data_size",
+        "100000000",
+        "--batch_size",
+        "4096",
+        "--learning_rate",
+        "0.001"
+    ],
+    "state": "running",
+    "program": "train_classifier.py",
+    "codePath": "train_classifier.py",
+    "git": {
+        "remote": "https://github.com/newcharge/howbullet.git",
+        "commit": "8955438e82e89f77e3ab02ea8a79912f748aca18"
+    },
+    "email": null,
+    "root": "/media/sdc/haosheng23/baseline/howbullet",
+    "host": "baowen-System-Product-Name",
+    "username": "qwt",
+    "executable": "/media/sdc/qwt/anaconda3/envs/howbullet/bin/python",
+    "cpu_count": 12,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 1229.0700833333333,
+        "min": 1200.0,
+        "max": 4650.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1200.094,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1295.027,
+            "min": 1200.0,
+            "max": 4700.0
+        },
+        {
+            "current": 1200.332,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.006,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.636,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.26,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.666,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1300.001,
+            "min": 1200.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1200.004,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1300.001,
+            "min": 1200.0,
+            "max": 4700.0
+        },
+        {
+            "current": 1300.235,
+            "min": 1200.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1200.271,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.902,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1300.382,
+            "min": 1200.0,
+            "max": 4700.0
+        },
+        {
+            "current": 1200.332,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1199.916,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.24,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.373,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1200.056,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1300.064,
+            "min": 1200.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1200.263,
+            "min": 1200.0,
+            "max": 4600.0
+        },
+        {
+            "current": 1300.141,
+            "min": 1200.0,
+            "max": 4700.0
+        },
+        {
+            "current": 1300.11,
+            "min": 1200.0,
+            "max": 4800.0
+        },
+        {
+            "current": 1200.694,
+            "min": 1200.0,
+            "max": 4600.0
+        }
+    ],
+    "disk": {
+        "total": 438.5479202270508,
+        "used": 83.44501113891602
+    },
+    "gpu": "GeForce RTX 3080",
+    "gpu_count": 2,
+    "gpu_devices": [
+        {
+            "name": "GeForce RTX 3080",
+            "memory_total": 10504699904
+        },
+        {
+            "name": "GeForce RTX 3080",
+            "memory_total": 10502078464
+        }
+    ],
+    "memory": {
+        "total": 62.50410461425781
+    }
+}

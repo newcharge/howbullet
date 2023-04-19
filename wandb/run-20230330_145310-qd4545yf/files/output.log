@@ -1,0 +1,49 @@
+
+using GPU ...
+
+
+
+
+
+
+
+
+
+
+7671it [00:21, 359.12it/s]
+0 acc_train: 0.761181
+7813it [00:21, 356.24it/s]
+782it [00:00, 1009.14it/s]
+223it [00:00, 335.13it/s]
+0 acc_val: 0.77041
+
+
+
+
+
+
+
+
+
+
+7775it [00:20, 390.09it/s]
+1 acc_train: 0.775774
+7813it [00:21, 370.95it/s]
+782it [00:00, 1017.51it/s]
+405it [00:01, 395.26it/s]
+1 acc_val: 0.78291
+865it [00:02, 393.66it/s]
+Traceback (most recent call last):
+  File "train_classifier.py", line 61, in <module>
+    for _, pair in train_loop:
+  File "/media/sdc/qwt/anaconda3/envs/howbullet/lib/python3.8/site-packages/tqdm/std.py", line 1195, in __iter__
+    for obj in iterable:
+  File "/media/sdc/qwt/anaconda3/envs/howbullet/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 521, in __next__
+    data = self._next_data()
+  File "/media/sdc/qwt/anaconda3/envs/howbullet/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 560, in _next_data
+    index = self._next_index()  # may raise StopIteration
+  File "/media/sdc/qwt/anaconda3/envs/howbullet/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 512, in _next_index
+    return next(self._sampler_iter)  # may raise StopIteration
+  File "/media/sdc/qwt/anaconda3/envs/howbullet/lib/python3.8/site-packages/torch/utils/data/sampler.py", line 230, in __iter__
+    batch.append(idx)
+KeyboardInterrupt

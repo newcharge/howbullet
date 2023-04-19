@@ -7,7 +7,11 @@ class RetargetingMLP(nn.Module):
     def __init__(self):
         super().__init__()
         self.model = nn.Sequential(
-            nn.Linear(55, 256), nn.Tanh(),
+            #nn.Linear(55, 256), nn.Tanh(),
+            # change 55---> 45
+
+            #nn.Linear(45, 256), nn.Tanh(),
+            nn.Linear(55,256),nn.Tanh(),
             nn.Linear(256, 256), nn.Tanh(),
             nn.Linear(256, 128), nn.Tanh(),
             nn.Linear(128, 16), nn.Tanh()
