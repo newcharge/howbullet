@@ -42,8 +42,8 @@ if __name__ == "__main__":
         # predict robot hand pose
         with torch.no_grad():
 
-            robot_joint_position = net(vis_roi["xyz"][[0,1,2,3,5,6,7,9,10,11,13,14,15,17,18,19]].view(1,-1))
-            #robot_joint_position = net(vis_roi["mano_input"][0:45].view(1, -1))
+            #robot_joint_position = net(vis_roi["xyz"][[0,1,2,3,5,6,7,9,10,11,13,14,15,17,18,19]].view(1,-1))
+            robot_joint_position = net(vis_roi["mano_input"][0:45].view(1, -1))
             chains = fk.get_chains(
                 urdf_path="robots/allegro_hand_description/allegro_hand_description_right.urdf", use_gpu=False
             )
