@@ -53,7 +53,6 @@ def anergy_loss_collision(human_key_vectors, robot_joint_angles, chains,e):
         cost_2+=5*10**(-3)*((robot_joint_angle**2).sum())**0.5#  change 2.5*10**(-3) to 5*10**(-3)
     return (cost_1+cost_2)/human_key_vectors.shape[0]
 
-"""
 def energy_loss(human_key_vectors, robot_joint_angles, chains, scale=0.625):
     assert len(robot_joint_angles.shape) == 2, "joints' shape should be BS x 16"
 
@@ -63,8 +62,7 @@ def energy_loss(human_key_vectors, robot_joint_angles, chains, scale=0.625):
     robot_key_vectors = get_key_vectors(robot_joints_position_from_canonical, is_human=False)  # BS x 10 x 3
     energy = ((human_key_vectors - scale * robot_key_vectors) ** 2).sum(dim=-1).sum(dim=-1).mean()
     return energy
-    
-"""
+
 def anergy_loss_collision_classifier(human_key_vectors, robot_joint_angles, chains,model, scale=0.625):
     assert len(robot_joint_angles.shape) == 2, "joints' shape should be BS x 16"
     

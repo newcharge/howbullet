@@ -9,6 +9,7 @@ import tools.fk_helper as fk
 import tools.plot_helper as plot
 import tqdm
 import argparse
+
 import wandb
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -35,6 +36,7 @@ if __name__ == "__main__":
    
     wandb.init(project='train_baseline', entity='a1885199500', config=config,name=Name)
     log_dict=dict()
+
     if torch.cuda.is_available():
         print("using GPU ...")
         device = torch.device("cuda:0")
@@ -52,7 +54,6 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,num_workers=8)
     validation_loader = DataLoader(validation_dataset, batch_size=64, shuffle=False)
     
-    
     #model_classifier=torch.load("model/model_classifier_4n_relu_epoch200_datasize10000000_batch1024_learningrate001.pth",map_location=device)
     #使用leakrelu的模型
     model_classifier=torch.load("model/model_classifier_5n_Tanh_epoch30_datasize10000000_batch1024_learningrate0001.pth")
@@ -62,6 +63,7 @@ if __name__ == "__main__":
     #pre_trained_dict=(torch.load("model/model_100epoch_10082223.pth")).state_dict()
     #net.load_state_dict(pre_trained_dict)
     optimizer = torch.optim.Adam(net.parameters(), lr=args.learning_rate)
+
     train_energy_per_iter, train_energy_per_epoch, val_energy_per_epoch = list(), list(), list()
     wandb.watch(net)
     for i in range(epoch_num):
@@ -80,7 +82,6 @@ if __name__ == "__main__":
             
             human_key_vectors = roi["key_vectors"].to(device=device)            
             output = net(net_input)
-#        anergy_loss_collision_classifier(human_key_vectors, robot_joint_angles, chains,model,weight, scale=0.625):
             energy,loss_collision=anergy_loss_collision_classifier(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains,model=model_classifier)
             #loss = energy_loss(human_key_vectors=human_key_vectors, robot_joint_angles=output, chains=chains) 
             energy=energy*1000
@@ -100,6 +101,7 @@ if __name__ == "__main__":
                 # 总共
             total_energy += loss_train.item() * net_input.shape[0]
             passed_num += net_input.shape[0]
+
             loop.set_postfix(loss_train=total_energy / passed_num)
             train_energy_per_iter.append(loss_train.item())
         
@@ -117,8 +119,9 @@ if __name__ == "__main__":
             total_energy = 0
             passed_num = 0
             for _, roi in loop:
- 
+
                 net_input = roi["mano_input"].to(device=device)
+
                 human_key_vectors = roi["key_vectors"].to(device=device)
                 
                 output = net(net_input)
@@ -146,4 +149,4 @@ if __name__ == "__main__":
     # dump results
 
     torch.save(net, "model/model_baseline_"+Name+".pth")
-        
+    
