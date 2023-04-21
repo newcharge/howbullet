@@ -34,6 +34,12 @@ class Skeleton:
     ])
 
 
+def down_sample_points(points, point_num):
+    pcd = get_plot_points(points, color=Color.RED, uniform_color=True)
+    pcd = pcd.farthest_point_down_sample(point_num)
+    return np.array(pcd.points)
+
+
 def plot_pts(objs, width=1280, height=720):
     o3d.visualization.draw_geometries(
         objs, width=width, height=height

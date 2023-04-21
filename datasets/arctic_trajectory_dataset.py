@@ -1,18 +1,18 @@
 import numpy as np
 
 from datasets.helpers.trajectory_dataset_helper import TrajectoryDataset
-from datasets.helpers.fpha_helper import FPHAHelper
+from datasets.helpers.arctic_helper import ARCTICHelper
 import tools.plot_helper as plot
 
 
-class FPHATrajectoryDataset(TrajectoryDataset):
+class ARCTICTrajectoryDataset(TrajectoryDataset):
     def __init__(
             self, data_dir, is_training,
-            use_norm=False, subjects=None, condition_num=50, future_num=10, frame_step=1, data_max=None, data_min=None
+            use_norm=False, split=None, condition_num=50, future_num=10, frame_step=1, data_max=None, data_min=None
     ):
         super().__init__()
-        frame_ids, joints3d = FPHAHelper(data_dir=data_dir, claimed_subjects=subjects).prepare_data()
-        joints3d = [FPHATrajectoryDataset.mapping_to_simple(j) for j in joints3d]
+        frame_ids, joints3d = ARCTICHelper(data_dir=data_dir, split=split).prepare_data()
+        joints3d = [ARCTICTrajectoryDataset.mapping_to_simple(j) for j in joints3d]
         self.past_init(
             frame_ids=frame_ids, joints3d=joints3d, is_training=is_training, use_norm=use_norm,
             condition_num=condition_num, future_num=future_num, frame_step=frame_step,
@@ -21,14 +21,14 @@ class FPHATrajectoryDataset(TrajectoryDataset):
         self.set_mapping()
 
     @staticmethod
-    def mapping_to_simple(fpha_joints):
-        return fpha_joints[..., [
+    def mapping_to_simple(arctic_joints):
+        return arctic_joints[..., [
             0,
-            1, 6, 7, 8,
-            2, 9, 10, 11,
-            3, 12, 13, 14,
-            4, 15, 16, 17,
-            5, 18, 19, 20
+            13, 14, 15, 16,
+            1, 2, 3, 17,
+            4, 5, 6, 18,
+            7, 8, 9, 20,
+            10, 11, 12, 19,
         ], :]
 
 
@@ -41,20 +41,20 @@ if __name__ == "__main__":
     plot_list = [kernel_pcd, kernel_lines]
 
     # all together
-    subjects = [1, 2, 3, 4, 5, 6]
-    colors = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 0], [0, 1, 1]]
+    split = "p1a_val"
+    color = plot.Color.YELLOW
 
-    joints3d = FPHATrajectoryDataset("..\\Hand_pose_annotation_v1", is_training=True, subjects=subjects, frame_step=2)\
+    joints3d = ARCTICTrajectoryDataset("..\\ARCTIC_seqs\\splits", is_training=True, split=split, frame_step=1)\
         .joints3d
 
     apply_plot_list = None
     for i in range(len(joints3d)):
-        for t in range(0, joints3d[i].shape[0], 100):
+        for t in range(0, joints3d[i].shape[0], 10):
             apply_plot_list = plot_list[:]
 
             pts = joints3d[i][t, :, :]
             links = plot.Skeleton.HUMAN
-            pcd, lines = plot.get_plot_graph(pts, links, colors[0], uniform_color=False)
+            pcd, lines = plot.get_plot_graph(pts, links, color, uniform_color=False)
             apply_plot_list += [pcd, lines]
 
             # plot

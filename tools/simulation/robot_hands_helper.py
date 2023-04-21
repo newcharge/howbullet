@@ -1,8 +1,13 @@
 import time
 
+import numpy as np
 import pybullet as p
 import pybullet_data
 import os
+
+from tools.commons.io_helper import load_xyz
+from tools.commons.math_helper import transform
+from tools.plot_helper import down_sample_points
 
 
 class LinkState:
@@ -112,7 +117,7 @@ class JointState:
 class CommonJoints:
     THUMB, INDEX, MIDDLE, RING_LITTLE = None, None, None, None
     TIP, DIP, PIP_U, PIP_D, MCP = None, None, None, None, None
-    LINK_INFOS = None
+    LINK_INFOS, BASE_LINK = None, None
     INDEX_OFFSET = 8
     BASE_FROM_ROOT_POSITION = (0, 0, 0.095)
     BASE_FROM_ROOT_ROTATION = (0, 0, 0, 1)
@@ -153,6 +158,25 @@ class CommonJoints:
             mapping_to_sim += list(map(lambda x: x // 5 * 4 + x % 5, finger_without_tip))
         return mapping_to_sim
 
+    @classmethod
+    def read_point_clouds(cls, geometry_dir, suffix='xyz', down_sample_num=1000):
+        hand_points_list = list()
+        point_cloud_num = len(cls.get_sequence())
+        for i in range(point_cloud_num):
+            link = cls.BASE_LINK if i == 0 else cls.LINK_INFOS[i - 1]
+            geometry_path = os.path.join(geometry_dir, f"{link['geometry']}.{suffix}")
+            points = load_xyz(geometry_path)
+            hand_points_list.append(down_sample_points(points, down_sample_num // point_cloud_num))
+        return hand_points_list
+
+    @staticmethod
+    def compose_point_cloud(trans_mat_list, point_cloud_list):
+        hand_points = list()
+        for i, (trans_mat, point_cloud) in enumerate(zip(trans_mat_list, point_cloud_list)):
+            hand_points.append(transform(trans_mat, point_cloud))
+        hand_points = np.concatenate(hand_points)
+        return hand_points
+
     @staticmethod
     def get_joints(is_right=True):
         if is_right:
@@ -177,6 +201,7 @@ class LeftJoints(CommonJoints):
         "link_4.0", "link_5.0", "link_6.0", "link_7.0", "link_7.0_tip",
         "link_0.0", "link_1.0", "link_2.0", "link_3.0", "link_3.0_tip",
     ]  # TODO: This format is not really in use, see RightJoints.LINK_INFOS .
+    BASE_LINK = {'name': 'base_link_left', "geometry": 'base_link_left'}
 
 
 class RightJoints(CommonJoints):
@@ -190,27 +215,28 @@ class RightJoints(CommonJoints):
     PIP_D = [16, 1, 6, 11]
     MCP = [15, 0, 5, 10]
     LINK_INFOS = [
-        {'name': 'link_12.0', 'lower_bound': 0.263, 'upper_bound': 1.396},
-        {'name': 'link_13.0', 'lower_bound': -0.105, 'upper_bound': 1.163},
-        {'name': 'link_14.0', 'lower_bound': -0.189, 'upper_bound': 1.644},
-        {'name': 'link_15.0', 'lower_bound': -0.162, 'upper_bound': 1.719},
-        {'name': 'link_15.0_tip', 'lower_bound': 0.0, 'upper_bound': -1.0},
-        {'name': 'link_0.0', 'lower_bound': -0.47, 'upper_bound': 0.47},
-        {'name': 'link_1.0', 'lower_bound': -0.196, 'upper_bound': 1.61},
-        {'name': 'link_2.0', 'lower_bound': -0.174, 'upper_bound': 1.709},
-        {'name': 'link_3.0', 'lower_bound': -0.227, 'upper_bound': 1.618},
-        {'name': 'link_3.0_tip', 'lower_bound': 0.0, 'upper_bound': -1.0},
-        {'name': 'link_4.0', 'lower_bound': -0.47, 'upper_bound': 0.47},
-        {'name': 'link_5.0', 'lower_bound': -0.196, 'upper_bound': 1.61},
-        {'name': 'link_6.0', 'lower_bound': -0.174, 'upper_bound': 1.709},
-        {'name': 'link_7.0', 'lower_bound': -0.227, 'upper_bound': 1.618},
-        {'name': 'link_7.0_tip', 'lower_bound': 0.0, 'upper_bound': -1.0},
-        {'name': 'link_8.0', 'lower_bound': -0.47, 'upper_bound': 0.47},
-        {'name': 'link_9.0', 'lower_bound': -0.196, 'upper_bound': 1.61},
-        {'name': 'link_10.0', 'lower_bound': -0.174, 'upper_bound': 1.709},
-        {'name': 'link_11.0', 'lower_bound': -0.227, 'upper_bound': 1.618},
-        {'name': 'link_11.0_tip', 'lower_bound': 0.0, 'upper_bound': -1.0}
+        {'name': 'link_12.0', 'lower_bound': 0.263, 'upper_bound': 1.396, "geometry": 'link_12.0_right'},
+        {'name': 'link_13.0', 'lower_bound': -0.105, 'upper_bound': 1.163, "geometry": 'link_13.0'},
+        {'name': 'link_14.0', 'lower_bound': -0.189, 'upper_bound': 1.644, "geometry": 'link_14.0'},
+        {'name': 'link_15.0', 'lower_bound': -0.162, 'upper_bound': 1.719, "geometry": 'link_15.0'},
+        {'name': 'link_15.0_tip', 'lower_bound': 0.0, 'upper_bound': -1.0, "geometry": 'link_15.0_tip'},
+        {'name': 'link_0.0', 'lower_bound': -0.47, 'upper_bound': 0.47, "geometry": 'link_0.0'},
+        {'name': 'link_1.0', 'lower_bound': -0.196, 'upper_bound': 1.61, "geometry": 'link_1.0'},
+        {'name': 'link_2.0', 'lower_bound': -0.174, 'upper_bound': 1.709, "geometry": 'link_2.0'},
+        {'name': 'link_3.0', 'lower_bound': -0.227, 'upper_bound': 1.618, "geometry": 'link_3.0'},
+        {'name': 'link_3.0_tip', 'lower_bound': 0.0, 'upper_bound': -1.0, "geometry": 'link_3.0_tip'},
+        {'name': 'link_4.0', 'lower_bound': -0.47, 'upper_bound': 0.47, "geometry": 'link_0.0'},
+        {'name': 'link_5.0', 'lower_bound': -0.196, 'upper_bound': 1.61, "geometry": 'link_1.0'},
+        {'name': 'link_6.0', 'lower_bound': -0.174, 'upper_bound': 1.709, "geometry": 'link_2.0'},
+        {'name': 'link_7.0', 'lower_bound': -0.227, 'upper_bound': 1.618, "geometry": 'link_3.0'},
+        {'name': 'link_7.0_tip', 'lower_bound': 0.0, 'upper_bound': -1.0, "geometry": 'link_3.0_tip'},
+        {'name': 'link_8.0', 'lower_bound': -0.47, 'upper_bound': 0.47, "geometry": 'link_0.0'},
+        {'name': 'link_9.0', 'lower_bound': -0.196, 'upper_bound': 1.61, "geometry": 'link_1.0'},
+        {'name': 'link_10.0', 'lower_bound': -0.174, 'upper_bound': 1.709, "geometry": 'link_2.0'},
+        {'name': 'link_11.0', 'lower_bound': -0.227, 'upper_bound': 1.618, "geometry": 'link_3.0'},
+        {'name': 'link_11.0_tip', 'lower_bound': 0.0, 'upper_bound': -1.0, "geometry": 'link_3.0_tip'}
     ]
+    BASE_LINK = {'name': 'base_link', "geometry": 'base_link'}
 
 
 if __name__ == "__main__":

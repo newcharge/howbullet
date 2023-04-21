@@ -9,8 +9,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 import numpy as np
 
-from datasets.fpha_trajectory_dataset import FPHATrajectoryDataset
-from datasets.ho3d_trajectory_dataset import HO3DTrajectoryDataset
+from datasets.arctic_trajectory_dataset import ARCTICTrajectoryDataset
 from networks.intention_refining import SiMLPe
 
 
@@ -38,26 +37,22 @@ def main(cfg):
     model = SiMLPe(cfg).to(device=device)
     model.train()
 
-    dataset = FPHATrajectoryDataset(
-        cfg.train_dataset_dir, is_training=True, subjects=cfg.motion.subjects, use_norm=cfg.motion.normalize_train_data,
+    dataset = ARCTICTrajectoryDataset(
+        cfg.ARCTIC_dataset_dir,
+        is_training=True, split=cfg.motion.train_split, use_norm=cfg.motion.normalize_train_data,
         frame_step=cfg.motion.step, condition_num=cfg.motion.input_length, future_num=cfg.motion.train_target_length
     )
     dataloader = DataLoader(dataset, batch_size=cfg.batch_size,
                             num_workers=cfg.num_workers, drop_last=True,
                             shuffle=True, pin_memory=False)
 
-    eval_dataset = HO3DTrajectoryDataset(
-        cfg.eval_dataset_dir, is_training=False, sequences=cfg.motion.sequences,
+    eval_dataset = ARCTICTrajectoryDataset(
+        cfg.ARCTIC_dataset_dir, is_training=False, split=cfg.motion.val_split,
         frame_step=cfg.motion.step, condition_num=cfg.motion.input_length, future_num=cfg.motion.eval_target_length
     )
-    # eval_dataset = FPHATrajectoryDataset(
-    #     cfg.train_dataset_dir, is_training=False, subjects=cfg.motion.subjects,
-    #     frame_step=cfg.motion.step, condition_num=cfg.motion.input_length, future_num=cfg.motion.eval_target_length
-    # )
     eval_dataloader = DataLoader(eval_dataset, batch_size=128,
                                  num_workers=cfg.num_workers, drop_last=False,
                                  shuffle=False, pin_memory=False)
-
     # initialize optimizer
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=cfg.lr_max,

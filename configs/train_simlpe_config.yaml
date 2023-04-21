@@ -1,8 +1,9 @@
 # A: Environment Config
-exp_id: 04101335
+exp_id: 04211700
 save_dir: simlpe_out
-train_dataset_dir: Hand_pose_annotation_v1
-eval_dataset_dir: HO3D_v3/train
+FPHA_dataset_dir: Hand_pose_annotation_v1
+HO3D_dataset_dir: HO3D_v3/train
+ARCTIC_dataset_dir: ARCTIC_seqs/splits
 seed: 888
 
 # B: Dataset Config
@@ -15,9 +16,8 @@ motion:
   train_target_length: 10
   eval_target_length: 25
   normalize_train_data: False
-  subjects: [1, 2, 3, 4, 5, 6]
-  sequences: ["ABF10", "BB10", "GPMF10", "GSF10", "MDF10", "SB10", "ShSu10", "SiBF10", "SMu40"]
-
+  train_split: p1a_train
+  val_split: p1a_val
 
 data_aug: True
 deriv_output: True
@@ -58,8 +58,8 @@ num_workers: 0
 total_iters: 50000
 #lr_max: 3e-4
 #lr_min: 1e-5
-lr_max: 1e-4
-lr_min: 1e-4
+lr_max: 1e-3
+lr_min: 1e-3
 weight_decay: 1e-4
 model_pth: ""
 
