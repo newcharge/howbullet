@@ -7,14 +7,14 @@ import tools.plot_helper as plot
 
 class ARCTICTrajectoryDataset(TrajectoryDataset):
     def __init__(
-            self, data_dir, is_training,
+            self, data_dir, is_training, data_aug=False,
             use_norm=False, split=None, condition_num=50, future_num=10, frame_step=1, data_max=None, data_min=None
     ):
         super().__init__()
         frame_ids, joints3d = ARCTICHelper(data_dir=data_dir, split=split).prepare_data()
         joints3d = [ARCTICTrajectoryDataset.mapping_to_simple(j) for j in joints3d]
         self.past_init(
-            frame_ids=frame_ids, joints3d=joints3d, is_training=is_training, use_norm=use_norm,
+            frame_ids=frame_ids, joints3d=joints3d, is_training=is_training, data_aug=data_aug, use_norm=use_norm,
             condition_num=condition_num, future_num=future_num, frame_step=frame_step,
             data_max=data_max, data_min=data_min
         )

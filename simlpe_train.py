@@ -118,8 +118,10 @@ def main(cfg):
                         f" lt_error: {lt_avg_error[0]:.6f} {lt_avg_error[1]:.6f}"
                     )
                     log_dict["eval_st_error"] = st_avg_error[0]
+                    log_dict["eval_st_relative_error"] = st_avg_error[1]
                     if lt_avg_error[0] != 0.:
                         log_dict["eval_lt_error"] = lt_avg_error[0]
+                        log_dict["eval_lt_relative_error"] = lt_avg_error[1]
 
                     model.train()
                 n_iter += 1

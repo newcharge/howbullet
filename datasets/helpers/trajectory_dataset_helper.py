@@ -12,13 +12,14 @@ class TrajectoryDataset(Dataset):
         self.joints3d = None
         self.norm_joints3d = None
         self.is_training = True
+        self.data_aug = False
         self.use_norm = False
         self.condition_num = 0
         self.future_num = 0
         self.frame_step = 0
 
     def past_init(
-            self, frame_ids, joints3d, is_training, condition_num, future_num, frame_step, data_max, data_min, use_norm
+            self, frame_ids, joints3d, is_training, data_aug, condition_num, future_num, frame_step, data_max, data_min, use_norm
     ):
         self.mapping = list()
         self.frame_ids = frame_ids
@@ -27,6 +28,7 @@ class TrajectoryDataset(Dataset):
         self.future_num = future_num
         self.frame_step = frame_step
         self.is_training = is_training
+        self.data_aug = data_aug
         self.use_norm = use_norm
         if is_training:
             self.data_max = max([np.max(s) for s in self.joints3d])
@@ -46,6 +48,10 @@ class TrajectoryDataset(Dataset):
         future_frame = torch.from_numpy(
             self.joints[sid][future_ids].reshape(len(future_ids), -1).astype(np.float32)
         )
+        if self.data_aug and torch.rand(1)[0] < .5:
+                flipped_frame = torch.cat([condition_frame, future_frame], dim=0)[::-1, ...]
+                condition_frame = flipped_frame[:condition_frame.shape[0], ...]
+                future_frame = flipped_frame[condition_frame.shape[0]:, ...]
         roi = {
             "condition_frame": condition_frame,
             "future_frame": future_frame
