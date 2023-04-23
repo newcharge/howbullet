@@ -65,9 +65,9 @@ def main(cfg):
     # ------ training ------- #
     wandb.watch(model)
 
-    n_iter = 0
+    n_iter, save_list = 0, list()
     with tqdm(total=cfg.total_iters) as loop:
-        while (n_iter + 1) < cfg.total_iters:
+        while (n_iter + 1) < cfg.total_iters or cfg.total_iters == 0:
             total_loss, iter_count = 0., 0
 
             for roi in dataloader:
@@ -87,7 +87,18 @@ def main(cfg):
                     output_dir = os.path.join(cfg.save_dir, f"output_{cfg.exp_id}")
                     os.makedirs(output_dir, exist_ok=True)
                     output_path = os.path.join(output_dir, f"model_{n_iter + 1}.pth")
-                    torch.save(model, output_path)
+                    torch.save(model.state_dict(), output_path)
+
+                    save_list.append({
+                        "model_path": output_path,
+                        "train_loss": log_dict["train_loss"]
+                    })
+                    if len(save_list) == 10:
+                        save_list = sorted(save_list, key=lambda d: d["train_loss"])
+                        print(save_list)
+                        model.load_state_dict(torch.load(save_list[0]["model_path"]))
+                        model.train()
+                        save_list = list()
 
                 if 0 < cfg.eval_every and (n_iter + 1) % cfg.eval_every == 0:
                     model.eval()
@@ -125,7 +136,7 @@ def main(cfg):
 
                     model.train()
                 n_iter += 1
-                if n_iter == cfg.total_iters:
+                if n_iter == cfg.total_iters and cfg.total_iters != 0:
                     break
 
                 wandb.log(log_dict)

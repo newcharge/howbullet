@@ -1,5 +1,5 @@
 # A: Environment Config
-exp_id: 04211700
+exp_id: 04231600_test
 save_dir: simlpe_out
 FPHA_dataset_dir: Hand_pose_annotation_v1
 HO3D_dataset_dir: HO3D_v3/train
@@ -55,7 +55,7 @@ motion_fc_out:
 batch_size: 128
 num_workers: 0
 #total_iters: 40000
-total_iters: 50000
+total_iters: 0
 #lr_max: 3e-4
 #lr_min: 1e-5
 lr_max: 1e-3
@@ -69,7 +69,7 @@ metrics: ["MPJPE", "ROOT_Related_MPJPE"]
 
 # E: Display Config
 eval_every: 1000
-save_every: 50000
+save_every: 1000
 
 # Others
 wandb_entity: howbullet
