@@ -39,7 +39,7 @@ def main(cfg):
 
     dataset = ARCTICTrajectoryDataset(
         cfg.ARCTIC_dataset_dir,
-        is_training=True, split=cfg.motion.train_split, use_norm=cfg.motion.normalize_train_data,
+        is_training=True, data_aug=cfg.data_aug, split=cfg.motion.train_split, use_norm=cfg.motion.normalize_train_data,
         frame_step=cfg.motion.step, condition_num=cfg.motion.input_length, future_num=cfg.motion.train_target_length
     )
     dataloader = DataLoader(dataset, batch_size=cfg.batch_size,
