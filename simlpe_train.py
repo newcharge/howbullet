@@ -18,13 +18,14 @@ log = logging.getLogger(__name__)
 
 @hydra.main(version_base=None, config_path="configs", config_name="train_simlpe_config")
 def main(cfg):
-    wandb.init(project=cfg.wandb_project, entity=cfg.wandb_entity, config=OmegaConf.to_container(cfg, resolve=True))
+    if cfg.enable_wandb:
+        wandb.init(project=cfg.wandb_project, entity=cfg.wandb_entity, config=OmegaConf.to_container(cfg, resolve=True))
 
     # torch.use_deterministic_algorithms(True)
     # torch.manual_seed(cfg.seed)
 
     if torch.cuda.is_available():
-        print("using GPU ...")
+        log.info("using GPU ...")
         device = torch.device("cuda:0")
     else:
         log.info("using CPU ...")
@@ -53,6 +54,8 @@ def main(cfg):
     eval_dataloader = DataLoader(eval_dataset, batch_size=128,
                                  num_workers=cfg.num_workers, drop_last=False,
                                  shuffle=False, pin_memory=False)
+    log.info(f"train dataset: {len(dataset)} items, eval dataset: {len(eval_dataset)} items.")
+
     # initialize optimizer
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=cfg.lr_max,
@@ -63,9 +66,13 @@ def main(cfg):
         model.load_state_dict(state_dict, strict=True)
 
     # ------ training ------- #
-    wandb.watch(model)
+    if cfg.enable_wandb:
+        wandb.watch(model)
 
-    n_iter, save_list = 0, list()
+    output_dir = os.path.join(cfg.save_dir, f"output_{cfg.exp_id}")
+    os.makedirs(output_dir, exist_ok=True)
+
+    n_iter, fine_list, max_dicts_num = 0, list(), 10
     with tqdm(total=cfg.total_iters) as loop:
         while (n_iter + 1) < cfg.total_iters or cfg.total_iters == 0:
             total_loss, iter_count = 0., 0
@@ -84,21 +91,25 @@ def main(cfg):
                 log_dict = {"train_loss": loss, "lr": current_lr}
 
                 if 0 < cfg.save_every and (n_iter + 1) % cfg.save_every == 0:
-                    output_dir = os.path.join(cfg.save_dir, f"output_{cfg.exp_id}")
-                    os.makedirs(output_dir, exist_ok=True)
                     output_path = os.path.join(output_dir, f"model_{n_iter + 1}.pth")
-                    torch.save(model.state_dict(), output_path)
+                    torch.save(model, output_path)
 
-                    save_list.append({
-                        "model_path": output_path,
+                if 0 < cfg.fine_every and (n_iter + 1) % (cfg.fine_every // max_dicts_num) == 0:
+                    dicts_dir = os.path.join(output_dir, "dicts")
+                    os.makedirs(dicts_dir, exist_ok=True)
+                    dict_path = os.path.join(dicts_dir, f"dict_{n_iter + 1}.pth")
+                    torch.save(model.state_dict(), dict_path)
+
+                    fine_list.append({
+                        "model_path": dict_path,
                         "train_loss": log_dict["train_loss"]
                     })
-                    if len(save_list) == 10:
-                        save_list = sorted(save_list, key=lambda d: d["train_loss"])
-                        print(save_list)
-                        model.load_state_dict(torch.load(save_list[0]["model_path"]))
+                    if len(fine_list) == max_dicts_num:
+                        fine_list = sorted(fine_list, key=lambda d: d["train_loss"])
+                        log.info(fine_list[0]["train_loss"])
+                        model.load_state_dict(torch.load(fine_list[0]["model_path"]))
                         model.train()
-                        save_list = list()
+                        fine_list = list()
 
                 if 0 < cfg.eval_every and (n_iter + 1) % cfg.eval_every == 0:
                     model.eval()
@@ -139,7 +150,8 @@ def main(cfg):
                 if n_iter == cfg.total_iters and cfg.total_iters != 0:
                     break
 
-                wandb.log(log_dict)
+                if cfg.enable_wandb:
+                    wandb.log(log_dict)
 
                 loop.update()
 

@@ -1,5 +1,5 @@
 # A: Environment Config
-exp_id: 04231600_test
+exp_id: 04251500_test
 save_dir: simlpe_out
 FPHA_dataset_dir: Hand_pose_annotation_v1
 HO3D_dataset_dir: HO3D_v3/train
@@ -13,11 +13,11 @@ motion:
   input_length_dct: ${motion.input_length}
   dim: 63
 
-  train_target_length: 10
-  eval_target_length: 25
+  train_target_length: 12
+  eval_target_length: 12
   normalize_train_data: False
-  train_split: p1a_train
-  val_split: p1a_val
+  train_split: p2a_train
+  val_split: p2a_val
 
 data_aug: True
 deriv_output: True
@@ -52,14 +52,14 @@ motion_fc_out:
   temporal_fc: True
 
 # D: Training Config
-batch_size: 128
+batch_size: 256
 num_workers: 0
 #total_iters: 40000
 total_iters: 0
 #lr_max: 3e-4
 #lr_min: 1e-5
-lr_max: 1e-3
-lr_min: 1e-3
+lr_max: 1e-4
+lr_min: 1e-4
 weight_decay: 1e-4
 model_pth: ""
 
@@ -69,8 +69,10 @@ metrics: ["MPJPE", "ROOT_Related_MPJPE"]
 
 # E: Display Config
 eval_every: 1000
-save_every: 1000
+fine_every: 10000
+save_every: 5000
 
 # Others
+enable_wandb: False
 wandb_entity: howbullet
 wandb_project: simlpe_train

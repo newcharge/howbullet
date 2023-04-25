@@ -49,7 +49,8 @@ class TrajectoryDataset(Dataset):
             self.joints[sid][future_ids].reshape(len(future_ids), -1).astype(np.float32)
         )
         if self.data_aug and torch.rand(1)[0] < .5:
-                flipped_frame = torch.cat([condition_frame, future_frame], dim=0)[::-1, ...]
+                flipped_frame = torch.cat([condition_frame, future_frame], dim=0)
+                flipped_frame = flipped_frame[[i for i in range(flipped_frame.shape[0])][::-1], ...]
                 condition_frame = flipped_frame[:condition_frame.shape[0], ...]
                 future_frame = flipped_frame[condition_frame.shape[0]:, ...]
         roi = {
