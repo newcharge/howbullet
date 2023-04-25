@@ -85,7 +85,7 @@ class TrajectoryDataset(Dataset):
             joints_mean = np.mean(np.mean(joints, axis=0), axis=0)
             self.norm_joints3d.append(joints - joints_mean)
         # normalize
-        self.norm_joints3d = [2 * (s - self.data_min) / (self.data_max - self.data_min) - 1 for s in self.joints3d]
+        # self.norm_joints3d = [2 * (s - self.data_min) / (self.data_max - self.data_min) - 1 for s in self.joints3d]
 
     @property
     def joints(self):
